@@ -85,9 +85,11 @@ function Feedback({ feedback }: { feedback: FeedbackState }) {
 function QuizCard({
   question,
   onAnswer,
+  pressedKey,
 }: {
   question: QuizQuestion;
   onAnswer: (option: string, correct: boolean) => void;
+  pressedKey: number | null;
 }) {
   return (
     <div className="quiz-card">
@@ -96,7 +98,7 @@ function QuizCard({
         {question.options.map((opt, i) => (
           <button
             key={`${opt.label}-${i}`}
-            className="option-btn"
+            className={`option-btn${pressedKey === i + 1 ? " option-btn-pressed" : ""}`}
             onClick={() => onAnswer(opt.label, opt.isCorrect)}
           >
             <span className="option-key">{i + 1}</span>
@@ -132,6 +134,7 @@ export default function App() {
   const [question, setQuestion] = useState<QuizQuestion | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pressedKey, setPressedKey] = useState<number | null>(null);
 
   // Load CSV + stats
   useEffect(() => {
@@ -187,17 +190,29 @@ export default function App() {
 
   // Keyboard handler
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (!question) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!question || feedback) return;
       const num = parseInt(e.key, 10);
       if (num >= 1 && num <= 6 && question.options[num - 1]) {
+        setPressedKey(num);
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (!question || feedback) return;
+      const num = parseInt(e.key, 10);
+      if (num >= 1 && num <= 6 && question.options[num - 1]) {
+        setPressedKey(null);
         const opt = question.options[num - 1];
         handleAnswer(opt.label, opt.isCorrect);
       }
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [question, handleAnswer]);
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+    };
+  }, [question, feedback, handleAnswer]);
 
   if (loading) {
     return <div className="loading">Načítám slovíčka...</div>;
@@ -228,7 +243,7 @@ export default function App() {
 
         <section className="bottom-half">
           {question ? (
-            <QuizCard question={question} onAnswer={handleAnswer} />
+            <QuizCard question={question} onAnswer={handleAnswer} pressedKey={pressedKey} />
           ) : (
             <div className="all-done">
               🎉 Všechna slovíčka zvládnuta! Zkuste jinou strategii.
