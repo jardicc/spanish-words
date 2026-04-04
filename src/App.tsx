@@ -56,15 +56,13 @@ function Feedback({ feedback, isFirst }: { feedback: { prompt: string; userAnswe
   return (
     <div className="feedback feedback-incorrect" style={isFirst ? undefined : { opacity: 0.35 }}>
       <div className="feedback-content">
-        <div className="feedback-icon">✗</div>
-        <div className="feedback-text">
-          <div className="feedback-row">
-            <span className="error-log-prompt">{feedback.prompt}</span>
-            <span className="wrong-label">→</span>
-            <span className="answer-display wrong-answer">{feedback.userAnswer}</span>
-            <span className="correct-reveal-label">✓</span>
-            <span className="answer-display correct-reveal">{feedback.correctAnswer}</span>
-          </div>
+        <div className="feedback-icon">⚡</div>
+        <div className="feedback-row">
+          <span className="log-prompt">{feedback.prompt}</span>
+          <span className="log-sep">·</span>
+          <span className="log-wrong">{feedback.userAnswer}</span>
+          <span className="log-arrow">→</span>
+          <span className="log-correct">{feedback.correctAnswer}</span>
         </div>
       </div>
     </div>
@@ -227,7 +225,7 @@ export default function App() {
         <section className="top-half" ref={errorLogRef}>
           <div className="error-log">
             {errorLog.map((e, i) => (
-              <Feedback key={i} feedback={e} isFirst={i === 0} />
+              <Feedback key={i} feedback={e} isFirst={i === errorLog.length - 1} />
             ))}
           </div>
         </section>
