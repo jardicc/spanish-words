@@ -1,0 +1,88 @@
+// @vitest-environment happy-dom
+import { GlobalWindow } from "happy-dom";
+import React, { act } from "react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { createRoot, type Root } from "react-dom/client";
+import { q } from "./render";
+import App from "../src/App";
+
+// Install happy-dom as globals so React's createRoot can use document/window.
+// This is the fallback for test runners that ignore vitest.config.ts environment.
+const _hw = new GlobalWindow() as any;
+const _g = globalThis as any;
+if (!_g.document) {
+  Object.getOwnPropertyNames(_hw).forEach((key) => {
+    try { if (!(key in _g)) _g[key] = _hw[key]; } catch {}
+  });
+}
+_g.IS_REACT_ACT_ENVIRONMENT = true;
+
+// Minimal CSV: Rank,Article,Word,Translation_EN,Czech,PoS
+const SAMPLE_CSV = `Rank,Article,Word,Translation,Czech,PoS
+1,el,gato,cat,kočka,noun
+2,la,casa,house,dům,noun
+3,,correr,to run,běžet,verb
+4,el,perro,dog,pes,noun
+5,la,mesa,table,stůl,noun
+6,el,libro,book,kniha,noun
+`;
+
+function makeFetch(stats: Record<string, { correct: number; incorrect: number }> = {}) {
+  return vi.fn((url: string) => {
+    if (url.includes("/api/datasets"))
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(["top1000.csv"]) });
+    if (url.includes("/api/words"))
+      return Promise.resolve({ ok: true, text: () => Promise.resolve(SAMPLE_CSV) });
+    if (url.includes("/api/stats"))
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(stats) });
+    return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+  });
+}
+
+// Flush all pending promise chains and resulting React state updates.
+async function flushAll() {
+  // setTimeout(0) fires after all microtasks settle — drains the fetch().then() chains.
+  await new Promise<void>((r) => setTimeout(r, 0));
+}
+
+describe("App", () => {
+  let container: HTMLElement;
+  let root: Root;
+
+  beforeEach(() => {
+    container = document.createElement("div") as unknown as HTMLElement;
+    document.body.appendChild(container as unknown as Node);
+  });
+
+  afterEach(async () => {
+    await act(async () => { root?.unmount(); });
+    document.body.removeChild(container as unknown as Node);
+    delete _g.fetch;
+    vi.restoreAllMocks();
+  });
+
+  it("shows a quiz question after loading when words are not yet mastered", async () => {
+    _g.fetch = makeFetch();
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<App />);
+    });
+    await act(flushAll);
+    expect(q(container, "quiz-card")).not.toBeNull();
+  });
+
+  it("shows all-done message when all words are mastered", async () => {
+    const mastered = Object.fromEntries(
+      ["gato", "casa", "correr", "perro", "mesa", "libro"].map(
+        (k) => [k, { correct: 5, incorrect: 0 }]
+      )
+    );
+    _g.fetch = makeFetch(mastered);
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<App />);
+    });
+    await act(flushAll);
+    expect(q(container, "quiz-card")).toBeNull();
+  });
+});

@@ -57,14 +57,14 @@ export default function App() {
     });
   }, [dataset]);
 
-  const generateNextQuestion = useCallback(() => {
+  const generateNextQuestion = useCallback((withStats?: StatsMap) => {
     if (words.length === 0) return;
     const strategy = allStrategies[strategyIndex];
-    const q = strategy.generateQuestion(words, stats);
+    const q = strategy.generateQuestion(words, withStats ?? stats);
     setQuestion(q);
   }, [words, stats, strategyIndex]);
 
-  // Generate question when ready
+  // Generate question when ready or when question becomes null (reset, strategy change)
   useEffect(() => {
     if (!loading && words.length > 0 && !question) {
       generateNextQuestion();
@@ -90,9 +90,9 @@ export default function App() {
       }
       const newStats = await saveAnswer(question.wordKey, wasCorrect);
       setStats(newStats);
-      setQuestion(null);
+      generateNextQuestion(newStats);
     },
-    [question]
+    [question, generateNextQuestion]
   );
 
   // Keyboard handler
