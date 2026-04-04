@@ -1,0 +1,101 @@
+Rank,Article,Word,Translation,Czech,Part of Speech
+1,,uno,one,jedna,number
+2,,dos,two,dva,number
+3,,tres,three,tři,number
+4,,cuatro,four,čtyři,number
+5,,cinco,five,pět,number
+6,,seis,six,šest,number
+7,,siete,seven,sedm,number
+8,,ocho,eight,osm,number
+9,,nueve,nine,devět,number
+10,,diez,ten,deset,number
+11,,once,eleven,jedenáct,number
+12,,doce,twelve,dvanáct,number
+13,,trece,thirteen,třináct,number
+14,,catorce,fourteen,čtrnáct,number
+15,,quince,fifteen,patnáct,number
+16,,dieciséis,sixteen,šestnáct,number
+17,,diecisiete,seventeen,sedmnáct,number
+18,,dieciocho,eighteen,osmnáct,number
+19,,diecinueve,nineteen,devatenáct,number
+20,,veinte,twenty,dvacet,number
+21,,veintiuno,twenty-one,dvacet jedna,number
+22,,veintidós,twenty-two,dvacet dva,number
+23,,veintitrés,twenty-three,dvacet tři,number
+24,,veinticuatro,twenty-four,dvacet čtyři,number
+25,,veinticinco,twenty-five,dvacet pět,number
+26,,veintiséis,twenty-six,dvacet šest,number
+27,,veintisiete,twenty-seven,dvacet sedm,number
+28,,veintiocho,twenty-eight,dvacet osm,number
+29,,veintinueve,twenty-nine,dvacet devět,number
+30,,treinta,thirty,třicet,number
+31,,treinta y uno,thirty-one,třicet jedna,number
+32,,treinta y dos,thirty-two,třicet dva,number
+33,,treinta y tres,thirty-three,třicet tři,number
+34,,treinta y cuatro,thirty-four,třicet čtyři,number
+35,,treinta y cinco,thirty-five,třicet pět,number
+36,,treinta y seis,thirty-six,třicet šest,number
+37,,treinta y siete,thirty-seven,třicet sedm,number
+38,,treinta y ocho,thirty-eight,třicet osm,number
+39,,treinta y nueve,thirty-nine,třicet devět,number
+40,,cuarenta,forty,čtyřicet,number
+41,,cuarenta y uno,forty-one,čtyřicet jedna,number
+42,,cuarenta y dos,forty-two,čtyřicet dva,number
+43,,cuarenta y tres,forty-three,čtyřicet tři,number
+44,,cuarenta y cuatro,forty-four,čtyřicet čtyři,number
+45,,cuarenta y cinco,forty-five,čtyřicet pět,number
+46,,cuarenta y seis,forty-six,čtyřicet šest,number
+47,,cuarenta y siete,forty-seven,čtyřicet sedm,number
+48,,cuarenta y ocho,forty-eight,čtyřicet osm,number
+49,,cuarenta y nueve,forty-nine,čtyřicet devět,number
+50,,cincuenta,fifty,padesát,number
+51,,cincuenta y uno,fifty-one,padesát jedna,number
+52,,cincuenta y dos,fifty-two,padesát dva,number
+53,,cincuenta y tres,fifty-three,padesát tři,number
+54,,cincuenta y cuatro,fifty-four,padesát čtyři,number
+55,,cincuenta y cinco,fifty-five,padesát pět,number
+56,,cincuenta y seis,fifty-six,padesát šest,number
+57,,cincuenta y siete,fifty-seven,padesát sedm,number
+58,,cincuenta y ocho,fifty-eight,padesát osm,number
+59,,cincuenta y nueve,fifty-nine,padesát devět,number
+60,,sesenta,sixty,šedesát,number
+61,,sesenta y uno,sixty-one,šedesát jedna,number
+62,,sesenta y dos,sixty-two,šedesát dva,number
+63,,sesenta y tres,sixty-three,šedesát tři,number
+64,,sesenta y cuatro,sixty-four,šedesát čtyři,number
+65,,sesenta y cinco,sixty-five,šedesát pět,number
+66,,sesenta y seis,sixty-six,šedesát šest,number
+67,,sesenta y siete,sixty-seven,šedesát sedm,number
+68,,sesenta y ocho,sixty-eight,šedesát osm,number
+69,,sesenta y nueve,sixty-nine,šedesát devět,number
+70,,setenta,seventy,sedmdesát,number
+71,,setenta y uno,seventy-one,sedmdesát jedna,number
+72,,setenta y dos,seventy-two,sedmdesát dva,number
+73,,setenta y tres,seventy-three,sedmdesát tři,number
+74,,setenta y cuatro,seventy-four,sedmdesát čtyři,number
+75,,setenta y cinco,seventy-five,sedmdesát pět,number
+76,,setenta y seis,seventy-six,sedmdesát šest,number
+77,,setenta y siete,seventy-seven,sedmdesát sedm,number
+78,,setenta y ocho,seventy-eight,sedmdesát osm,number
+79,,setenta y nueve,seventy-nine,sedmdesát devět,number
+80,,ochenta,eighty,osmdesát,number
+81,,ochenta y uno,eighty-one,osmdesát jedna,number
+82,,ochenta y dos,eighty-two,osmdesát dva,number
+83,,ochenta y tres,eighty-three,osmdesát tři,number
+84,,ochenta y cuatro,eighty-four,osmdesát čtyři,number
+85,,ochenta y cinco,eighty-five,osmdesát pět,number
+86,,ochenta y seis,eighty-six,osmdesát šest,number
+87,,ochenta y siete,eighty-seven,osmdesát sedm,number
+88,,ochenta y ocho,eighty-eight,osmdesát osm,number
+89,,ochenta y nueve,eighty-nine,osmdesát devět,number
+90,,noventa,ninety,devadesát,number
+91,,noventa y uno,ninety-one,devadesát jedna,number
+92,,noventa y dos,ninety-two,devadesát dva,number
+93,,noventa y tres,ninety-three,devadesát tři,number
+94,,noventa y cuatro,ninety-four,devadesát čtyři,number
+95,,noventa y cinco,ninety-five,devadesát pět,number
+96,,noventa y seis,ninety-six,devadesát šest,number
+97,,noventa y siete,ninety-seven,devadesát sedm,number
+98,,noventa y ocho,ninety-eight,devadesát osm,number
+99,,noventa y nueve,ninety-nine,devadesát devět,number
+100,,cien,one hundred,sto,number
