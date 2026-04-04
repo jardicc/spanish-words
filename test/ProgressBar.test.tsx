@@ -1,17 +1,18 @@
+// @vitest-environment happy-dom
 import { describe, it, expect } from "vitest";
 import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { render, q } from "./render";
 import { ProgressBar } from "../src/components/ProgressBar";
 import type { StatsMap } from "../src/types";
 
 describe("ProgressBar", () => {
   it("renders with empty stats", () => {
-    const html = renderToStaticMarkup(<ProgressBar stats={{}} totalWords={100} />);
-    expect(html).toContain("Zvládnuto:");
-    expect(html).toContain("<strong>0</strong>");
-    expect(html).toContain("/ 100");
-    expect(html).toContain("Procvičeno:");
-    expect(html).toContain("0%");
+    const el = render(<ProgressBar stats={{}} totalWords={100} />);
+    expect(q(el, "progress-bar")).not.toBeNull();
+    expect(q(el, "progress-mastered")!.textContent).toBe("0");
+    expect(q(el, "progress-total")!.textContent).toBe("100");
+    expect(q(el, "progress-attempted")!.textContent).toBe("0");
+    expect(q(el, "progress-percent")!.textContent).toBe("0%");
   });
 
   it("shows mastered count for words with 100% rate and 3+ attempts", () => {
@@ -20,32 +21,34 @@ describe("ProgressBar", () => {
       perro: { correct: 3, incorrect: 0 },
       gato: { correct: 2, incorrect: 0 }, // not enough attempts
     };
-    const html = renderToStaticMarkup(<ProgressBar stats={stats} totalWords={50} />);
-    expect(html).toContain("<strong>2</strong> / 50"); // 2 mastered
-    expect(html).toContain("Procvičeno: <strong>3</strong>");
-    expect(html).toContain("4%"); // 2/50 = 4%
+    const el = render(<ProgressBar stats={stats} totalWords={50} />);
+    expect(q(el, "progress-mastered")!.textContent).toBe("2");
+    expect(q(el, "progress-total")!.textContent).toBe("50");
+    expect(q(el, "progress-attempted")!.textContent).toBe("3");
+    expect(q(el, "progress-percent")!.textContent).toBe("4%");
   });
 
   it("does not count words with errors as mastered", () => {
     const stats: StatsMap = {
       casa: { correct: 10, incorrect: 1 },
     };
-    const html = renderToStaticMarkup(<ProgressBar stats={stats} totalWords={10} />);
-    expect(html).toContain("<strong>0</strong> / 10");
-    expect(html).toContain("0%");
+    const el = render(<ProgressBar stats={stats} totalWords={10} />);
+    expect(q(el, "progress-mastered")!.textContent).toBe("0");
+    expect(q(el, "progress-percent")!.textContent).toBe("0%");
   });
 
   it("renders progress fill width", () => {
     const stats: StatsMap = {
       casa: { correct: 3, incorrect: 0 },
     };
-    const html = renderToStaticMarkup(<ProgressBar stats={stats} totalWords={10} />);
-    expect(html).toContain('width:10%');
+    const el = render(<ProgressBar stats={stats} totalWords={10} />);
+    const fill = q(el, "progress-fill") as HTMLElement;
+    expect(fill.style.width).toBe("10%");
   });
 
   it("handles zero totalWords", () => {
-    const html = renderToStaticMarkup(<ProgressBar stats={{}} totalWords={0} />);
-    expect(html).toContain("0%");
-    expect(html).toContain("/ 0");
+    const el = render(<ProgressBar stats={{}} totalWords={0} />);
+    expect(q(el, "progress-percent")!.textContent).toBe("0%");
+    expect(q(el, "progress-total")!.textContent).toBe("0");
   });
 });

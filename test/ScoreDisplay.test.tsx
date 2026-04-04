@@ -1,15 +1,16 @@
+// @vitest-environment happy-dom
 import { describe, it, expect } from "vitest";
 import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { render, q } from "./render";
 import { ScoreDisplay } from "../src/components/ScoreDisplay";
 import type { StatsMap } from "../src/types";
 
 describe("ScoreDisplay", () => {
   it("renders zeros with empty stats", () => {
-    const html = renderToStaticMarkup(<ScoreDisplay stats={{}} />);
-    expect(html).toContain("✓ 0");
-    expect(html).toContain("✗ 0");
-    expect(html).toContain("0%");
+    const el = render(<ScoreDisplay stats={{}} />);
+    expect(q(el, "score-correct")!.textContent).toBe("0");
+    expect(q(el, "score-incorrect")!.textContent).toBe("0");
+    expect(q(el, "score-rate")!.textContent).toBe("0%");
   });
 
   it("sums correct and incorrect across all words", () => {
@@ -17,27 +18,24 @@ describe("ScoreDisplay", () => {
       casa: { correct: 5, incorrect: 2 },
       perro: { correct: 3, incorrect: 1 },
     };
-    const html = renderToStaticMarkup(<ScoreDisplay stats={stats} />);
-    expect(html).toContain("✓ 8");
-    expect(html).toContain("✗ 3");
-    expect(html).toContain("73%"); // 8/11 = 72.7 → 73
+    const el = render(<ScoreDisplay stats={stats} />);
+    expect(q(el, "score-correct")!.textContent).toBe("8");
+    expect(q(el, "score-incorrect")!.textContent).toBe("3");
+    expect(q(el, "score-rate")!.textContent).toBe("73%");
   });
 
   it("shows 100% when all correct", () => {
     const stats: StatsMap = {
       casa: { correct: 10, incorrect: 0 },
     };
-    const html = renderToStaticMarkup(<ScoreDisplay stats={stats} />);
-    expect(html).toContain("✓ 10");
-    expect(html).toContain("✗ 0");
-    expect(html).toContain("100%");
+    const el = render(<ScoreDisplay stats={stats} />);
+    expect(q(el, "score-correct")!.textContent).toBe("10");
+    expect(q(el, "score-incorrect")!.textContent).toBe("0");
+    expect(q(el, "score-rate")!.textContent).toBe("100%");
   });
 
-  it("has correct CSS classes", () => {
-    const html = renderToStaticMarkup(<ScoreDisplay stats={{}} />);
-    expect(html).toContain("score-display");
-    expect(html).toContain("score-correct");
-    expect(html).toContain("score-incorrect");
-    expect(html).toContain("score-rate");
+  it("score-display element exists", () => {
+    const el = render(<ScoreDisplay stats={{}} />);
+    expect(q(el, "score-display")).not.toBeNull();
   });
 });

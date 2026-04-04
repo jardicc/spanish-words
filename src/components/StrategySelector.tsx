@@ -12,13 +12,15 @@ export function StrategySelector({
   onChange: (i: number) => void;
 }) {
   return (
-    <div className="strategy-selector">
+    <div className="strategy-selector" data-test="strategy-selector">
       {strategies.map((s, i) => (
         <button
           key={s.name}
           className={`strategy-btn ${i === current ? "active" : ""}`}
           onClick={() => onChange(i)}
           title={s.description}
+          data-test="strategy-btn"
+          data-active={i === current}
         >
           {s.name}
         </button>

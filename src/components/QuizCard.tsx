@@ -12,17 +12,19 @@ export function QuizCard({
   pressedKey: number | null;
 }) {
   return (
-    <div className="quiz-card">
-      <div className="quiz-prompt">{question.prompt}</div>
-      <div className="quiz-options">
+    <div className="quiz-card" data-test="quiz-card">
+      <div className="quiz-prompt" data-test="quiz-prompt">{question.prompt}</div>
+      <div className="quiz-options" data-test="quiz-options">
         {question.options.map((opt, i) => (
           <button
             key={`${opt.label}-${i}`}
             className={`option-btn${pressedKey === i + 1 ? " option-btn-pressed" : ""}`}
             onClick={() => onAnswer(opt.label, opt.isCorrect)}
+            data-test="option-btn"
+            data-pressed={pressedKey === i + 1}
           >
-            <span className="option-key">{i + 1}</span>
-            <span className="option-label">{opt.label}</span>
+            <span className="option-key" data-test="option-key">{i + 1}</span>
+            <span className="option-label" data-test="option-label">{opt.label}</span>
           </button>
         ))}
       </div>

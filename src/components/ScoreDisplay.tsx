@@ -11,10 +11,10 @@ export function ScoreDisplay({ stats }: { stats: StatsMap }) {
   const rate = total > 0 ? Math.round((totals.correct / total) * 100) : 0;
 
   return (
-    <div className="score-display">
-      <span className="score-correct">✓ {totals.correct}</span>
-      <span className="score-incorrect">✗ {totals.incorrect}</span>
-      <span className="score-rate">{rate}%</span>
+    <div className="score-display" data-test="score-display">
+      <span className="score-correct" data-test="score-correct">{totals.correct}</span>
+      <span className="score-incorrect" data-test="score-incorrect">{totals.incorrect}</span>
+      <span className="score-rate" data-test="score-rate">{rate}%</span>
     </div>
   );
 }

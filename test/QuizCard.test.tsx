@@ -1,6 +1,7 @@
+// @vitest-environment happy-dom
 import { describe, it, expect } from "vitest";
 import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { render, q, qAll } from "./render";
 import { QuizCard } from "../src/components/QuizCard";
 import type { QuizQuestion } from "../src/types";
 
@@ -20,49 +21,45 @@ const question: QuizQuestion = {
 
 describe("QuizCard", () => {
   it("renders the prompt", () => {
-    const html = renderToStaticMarkup(
+    const el = render(
       <QuizCard question={question} onAnswer={() => {}} pressedKey={null} />
     );
-    expect(html).toContain("la casa");
-    expect(html).toContain("quiz-prompt");
+    expect(q(el, "quiz-prompt")!.textContent).toBe("la casa");
   });
 
   it("renders all options with labels", () => {
-    const html = renderToStaticMarkup(
+    const el = render(
       <QuizCard question={question} onAnswer={() => {}} pressedKey={null} />
     );
-    expect(html).toContain("dům");
-    expect(html).toContain("pes");
-    expect(html).toContain("kočka");
-    expect(html).toContain("stůl");
-    expect(html).toContain("auto");
-    expect(html).toContain("kniha");
+    const labels = qAll(el, "option-label").map((e) => e.textContent);
+    expect(labels).toEqual(["dům", "pes", "kočka", "stůl", "auto", "kniha"]);
   });
 
   it("renders key numbers 1-6", () => {
-    const html = renderToStaticMarkup(
+    const el = render(
       <QuizCard question={question} onAnswer={() => {}} pressedKey={null} />
     );
-    for (let i = 1; i <= 6; i++) {
-      expect(html).toContain(`<span class="option-key">${i}</span>`);
-    }
+    const keys = qAll(el, "option-key").map((e) => e.textContent);
+    expect(keys).toEqual(["1", "2", "3", "4", "5", "6"]);
   });
 
-  it("adds pressed class for the pressed key", () => {
-    const html = renderToStaticMarkup(
+  it("marks one button as pressed", () => {
+    const el = render(
       <QuizCard question={question} onAnswer={() => {}} pressedKey={3} />
     );
-    expect(html).toContain("option-btn-pressed");
-    // Only one button should have pressed class
-    const pressedCount = (html.match(/option-btn-pressed/g) || []).length;
-    expect(pressedCount).toBe(1);
+    const btns = qAll(el, "option-btn");
+    const pressed = btns.filter((b) => b.getAttribute("data-pressed") === "true");
+    expect(pressed.length).toBe(1);
+    expect(btns.indexOf(pressed[0]!)).toBe(2); // 3rd button (index 2)
   });
 
-  it("has no pressed class when pressedKey is null", () => {
-    const html = renderToStaticMarkup(
+  it("has no pressed button when pressedKey is null", () => {
+    const el = render(
       <QuizCard question={question} onAnswer={() => {}} pressedKey={null} />
     );
-    expect(html).not.toContain("option-btn-pressed");
+    const btns = qAll(el, "option-btn");
+    const pressed = btns.filter((b) => b.getAttribute("data-pressed") === "true");
+    expect(pressed.length).toBe(0);
   });
 
   it("works with fewer options (article strategy)", () => {
@@ -75,13 +72,12 @@ describe("QuizCard", () => {
         { label: "la", isCorrect: true },
       ],
     };
-    const html = renderToStaticMarkup(
+    const el = render(
       <QuizCard question={articleQ} onAnswer={() => {}} pressedKey={null} />
     );
-    expect(html).toContain("___ casa (dům)");
-    expect(html).toContain("el");
-    expect(html).toContain("la");
-    const btnCount = (html.match(/option-btn"/g) || []).length;
-    expect(btnCount).toBe(2);
+    expect(q(el, "quiz-prompt")!.textContent).toBe("___ casa (dům)");
+    const labels = qAll(el, "option-label").map((e) => e.textContent);
+    expect(labels).toEqual(["el", "la"]);
+    expect(qAll(el, "option-btn").length).toBe(2);
   });
 });

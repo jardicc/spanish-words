@@ -12,14 +12,14 @@ export function ProgressBar({ stats, totalWords }: { stats: StatsMap; totalWords
   const percent = totalWords > 0 ? Math.round((mastered / totalWords) * 100) : 0;
 
   return (
-    <div className="progress-bar">
+    <div className="progress-bar" data-test="progress-bar">
       <div className="progress-info">
-        <span>Zvládnuto: <strong>{mastered}</strong> / {totalWords}</span>
-        <span>Procvičeno: <strong>{attempted}</strong></span>
-        <span>{percent}%</span>
+        <span>Zvládnuto: <strong data-test="progress-mastered">{mastered}</strong> / <strong data-test="progress-total">{totalWords}</strong></span>
+        <span>Procvičeno: <strong data-test="progress-attempted">{attempted}</strong></span>
+        <span data-test="progress-percent">{percent}%</span>
       </div>
       <div className="progress-track">
-        <div className="progress-fill" style={{ width: `${percent}%` }} />
+        <div className="progress-fill" data-test="progress-fill" style={{ width: `${percent}%` }} />
       </div>
     </div>
   );
