@@ -1,9 +1,12 @@
 import { readFileSync, existsSync, writeFileSync, mkdirSync, watch } from "fs";
 import { join } from "path";
+import { createHash } from "crypto";
 
 const STATS_FILE = join(import.meta.dir, "data", "stats.json");
 const CSV_FILE = join(import.meta.dir, "resources", "top1000.csv");
 const DIST_DIR = join(import.meta.dir, "dist");
+
+let bundleHash = "";
 
 // Ensure data directory exists
 const dataDir = join(import.meta.dir, "data");
@@ -26,7 +29,11 @@ async function buildClient() {
   if (!result.success) {
     console.error("Build failed:", result.logs);
   } else {
-    console.log("Client bundle built.");
+    bundleHash = createHash("md5")
+      .update(readFileSync(join(DIST_DIR, "index.js")))
+      .digest("hex")
+      .slice(0, 8);
+    console.log(`Client bundle built. (hash: ${bundleHash})`);
   }
   return result.success;
 }
@@ -36,6 +43,8 @@ if (!await buildClient()) process.exit(1);
 
 // SSE clients waiting for reload signal
 const reloadClients = new Set<ReadableStreamDefaultController>();
+
+
 
 function notifyReload() {
   for (const ctrl of reloadClients) {
@@ -72,7 +81,8 @@ function saveStatsToDisk(stats: Record<string, { correct: number; incorrect: num
 
 let stats = loadStatsFromDisk();
 
-const indexHTML = `<!DOCTYPE html>
+function getIndexHTML() {
+  return `<!DOCTYPE html>
 <html lang="cs">
 <head>
   <meta charset="UTF-8" />
@@ -82,13 +92,14 @@ const indexHTML = `<!DOCTYPE html>
 </head>
 <body>
   <div id="root"></div>
-  <script type="module" src="/bundle.js"></script>
+  <script type="module" src="/bundle.js?v=${bundleHash}"></script>
   <script>
     const es = new EventSource('/api/dev-reload');
     es.onmessage = () => location.reload();
   </script>
 </body>
 </html>`;
+}
 
 const server = Bun.serve({
   port: 3000,
@@ -162,7 +173,7 @@ const server = Bun.serve({
     }
 
     // SPA fallback
-    return new Response(indexHTML, {
+    return new Response(getIndexHTML(), {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   },

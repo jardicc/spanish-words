@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from "react";
-import type { WordEntry, StatsMap, QuizQuestion, FeedbackState, Strategy } from "./types";
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import type { WordEntry, StatsMap, QuizQuestion, Strategy } from "./types";
 import { allStrategies } from "./strategies";
 import { loadStats, saveAnswer } from "./stats-client";
 import { parseCSV } from "./csv";
@@ -52,32 +52,21 @@ function StrategySelector({
   );
 }
 
-function Feedback({ feedback }: { feedback: FeedbackState }) {
+function Feedback({ feedback, isFirst }: { feedback: { prompt: string; userAnswer: string; correctAnswer: string }; isFirst: boolean }) {
   return (
-    <div className={`feedback ${feedback.wasCorrect ? "feedback-correct" : "feedback-incorrect"}`}>
-      {feedback.wasCorrect ? (
-        <div className="feedback-content">
-          <div className="feedback-icon">✓</div>
-          <div className="feedback-text">
-            <span className="correct-label">Správně!</span>
-            <span className="answer-display correct-answer">{feedback.correctAnswer}</span>
+    <div className="feedback feedback-incorrect" style={isFirst ? undefined : { opacity: 0.35 }}>
+      <div className="feedback-content">
+        <div className="feedback-icon">✗</div>
+        <div className="feedback-text">
+          <div className="feedback-row">
+            <span className="error-log-prompt">{feedback.prompt}</span>
+            <span className="wrong-label">→</span>
+            <span className="answer-display wrong-answer">{feedback.userAnswer}</span>
+            <span className="correct-reveal-label">✓</span>
+            <span className="answer-display correct-reveal">{feedback.correctAnswer}</span>
           </div>
         </div>
-      ) : (
-        <div className="feedback-content">
-          <div className="feedback-icon">✗</div>
-          <div className="feedback-text">
-            <div className="feedback-row">
-              <span className="wrong-label">Vaše odpověď:</span>
-              <span className="answer-display wrong-answer">{feedback.userAnswer}</span>
-            </div>
-            <div className="feedback-row">
-              <span className="correct-reveal-label">Správná odpověď:</span>
-              <span className="answer-display correct-reveal">{feedback.correctAnswer}</span>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -132,7 +121,14 @@ export default function App() {
   const [stats, setStats] = useState<StatsMap>({});
   const [strategyIndex, setStrategyIndex] = useState(0);
   const [question, setQuestion] = useState<QuizQuestion | null>(null);
-  const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const [errorLog, setErrorLog] = useState<{ prompt: string; userAnswer: string; correctAnswer: string }[]>([]);
+  const errorLogRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (errorLogRef.current) {
+      errorLogRef.current.scrollTop = errorLogRef.current.scrollHeight;
+    }
+  }, [errorLog]);
   const [loading, setLoading] = useState(true);
   const [pressedKey, setPressedKey] = useState<number | null>(null);
 
@@ -166,24 +162,15 @@ export default function App() {
   const handleAnswer = useCallback(
     async (userAnswer: string, wasCorrect: boolean) => {
       if (!question) return;
-
-      setFeedback({
-        correctAnswer: question.correctAnswer,
-        userAnswer,
-        wasCorrect,
-      });
-
+      if (!wasCorrect) {
+        setErrorLog((prev) => [
+          ...prev,
+          { prompt: question.prompt, userAnswer, correctAnswer: question.correctAnswer },
+        ]);
+      }
       const newStats = await saveAnswer(question.wordKey, wasCorrect);
       setStats(newStats);
-
-      // Auto-advance after delay - longer for wrong answers (spaced learning)
-      setTimeout(
-        () => {
-          setFeedback(null);
-          setQuestion(null);
-        },
-        wasCorrect ? 800 : 2500
-      );
+      setQuestion(null);
     },
     [question]
   );
@@ -191,14 +178,14 @@ export default function App() {
   // Keyboard handler
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (!question || feedback) return;
+      if (!question) return;
       const num = parseInt(e.key, 10);
       if (num >= 1 && num <= 6 && question.options[num - 1]) {
         setPressedKey(num);
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
-      if (!question || feedback) return;
+      if (!question) return;
       const num = parseInt(e.key, 10);
       if (num >= 1 && num <= 6 && question.options[num - 1]) {
         setPressedKey(null);
@@ -212,7 +199,7 @@ export default function App() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [question, feedback, handleAnswer]);
+  }, [question, handleAnswer]);
 
   if (loading) {
     return <div className="loading">Načítám slovíčka...</div>;
@@ -229,7 +216,7 @@ export default function App() {
             onChange={(i) => {
               setStrategyIndex(i);
               setQuestion(null);
-              setFeedback(null);
+              setErrorLog([]);
             }}
           />
           <ScoreDisplay stats={stats} />
@@ -237,8 +224,12 @@ export default function App() {
       </header>
 
       <main className="main">
-        <section className="top-half">
-          {feedback && <Feedback feedback={feedback} />}
+        <section className="top-half" ref={errorLogRef}>
+          <div className="error-log">
+            {errorLog.map((e, i) => (
+              <Feedback key={i} feedback={e} isFirst={i === 0} />
+            ))}
+          </div>
         </section>
 
         <section className="bottom-half">

@@ -125,19 +125,29 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-}
-
-.top-half {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
   min-height: 0;
 }
 
+.top-half {
+  flex: 0 0 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 12px 24px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.error-log {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
 .bottom-half {
-  flex: 1;
+  flex: 0 0 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -152,10 +162,9 @@ body {
    Von Restorff effect: make the correct answer visually distinct and memorable */
 .feedback {
   width: 100%;
-  max-width: 600px;
-  border-radius: 16px;
-  padding: 32px;
-  animation: fadeIn 0.3s ease;
+  border-radius: 8px;
+  padding: 8px 16px;
+  animation: fadeIn 0.2s ease;
 }
 
 @keyframes fadeIn {
@@ -176,11 +185,11 @@ body {
 .feedback-content {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
 }
 
 .feedback-icon {
-  font-size: 3rem;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 1;
 }
@@ -210,8 +219,14 @@ body {
   color: #86efac;
 }
 
+.error-log-prompt {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e4e4e7;
+}
+
 .wrong-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #fca5a5;
 }
 
@@ -221,8 +236,8 @@ body {
 }
 
 .answer-display {
-  font-size: 1.6rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 /* Psychology: Green on dark = high salience, facilitates memory encoding */
