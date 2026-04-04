@@ -64,7 +64,6 @@ function scheduleRebuild() {
 }
 
 watch(join(import.meta.dir, "src"), { recursive: true }, scheduleRebuild);
-watch(join(import.meta.dir, "styles.css"), scheduleRebuild);
 
 function loadStatsFromDisk(): Record<string, { correct: number; incorrect: number }> {
   if (!existsSync(STATS_FILE)) return {};
@@ -88,7 +87,7 @@ function getIndexHTML() {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Španělská slovíčka</title>
-  <style>${readFileSync(join(import.meta.dir, "styles.css"), "utf-8")}</style>
+  <style>${existsSync(join(DIST_DIR, "index.css")) ? readFileSync(join(DIST_DIR, "index.css"), "utf-8") : ""}</style>
 </head>
 <body>
   <div id="root"></div>
@@ -130,6 +129,13 @@ const server = Bun.serve({
 
     // API: Get stats
     if (url.pathname === "/api/stats" && req.method === "GET") {
+      return Response.json(stats);
+    }
+
+    // API: Reset stats
+    if (url.pathname === "/api/stats" && req.method === "DELETE") {
+      stats = {};
+      saveStatsToDisk(stats);
       return Response.json(stats);
     }
 

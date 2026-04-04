@@ -1,0 +1,35 @@
+.score-display {
+  display: flex;
+  gap: 16px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.score-correct {
+  color: #4ade80;
+}
+
+.score-incorrect {
+  color: #f87171;
+}
+
+.score-rate {
+  color: #fbbf24;
+}
+
+.reset-btn {
+  background: none;
+  border: 1px solid #3f3f46;
+  color: #71717a;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.reset-btn:hover {
+  color: #f87171;
+  border-color: #f87171;
+}

@@ -1,125 +1,24 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import type { WordEntry, StatsMap, QuizQuestion, Strategy } from "./types";
+import type { WordEntry, StatsMap, QuizQuestion } from "./types";
 import { allStrategies } from "./strategies";
-import { loadStats, saveAnswer } from "./stats-client";
+import { loadStats, saveAnswer, resetStats } from "./stats-client";
 import { parseCSV } from "./csv";
-
-function ProgressBar({ stats, totalWords }: { stats: StatsMap; totalWords: number }) {
-  const mastered = Object.values(stats).filter((s) => {
-    const total = s.correct + s.incorrect;
-    return total >= 3 && s.correct / total >= 0.999;
-  }).length;
-
-  const attempted = Object.keys(stats).length;
-  const percent = totalWords > 0 ? Math.round((mastered / totalWords) * 100) : 0;
-
-  return (
-    <div className="progress-bar">
-      <div className="progress-info">
-        <span>Zvládnuto: <strong>{mastered}</strong> / {totalWords}</span>
-        <span>Procvičeno: <strong>{attempted}</strong></span>
-        <span>{percent}%</span>
-      </div>
-      <div className="progress-track">
-        <div className="progress-fill" style={{ width: `${percent}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function StrategySelector({
-  strategies,
-  current,
-  onChange,
-}: {
-  strategies: Strategy[];
-  current: number;
-  onChange: (i: number) => void;
-}) {
-  return (
-    <div className="strategy-selector">
-      {strategies.map((s, i) => (
-        <button
-          key={s.name}
-          className={`strategy-btn ${i === current ? "active" : ""}`}
-          onClick={() => onChange(i)}
-          title={s.description}
-        >
-          {s.name}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function Feedback({ feedback, isFirst }: { feedback: { prompt: string; userAnswer: string; correctAnswer: string }; isFirst: boolean }) {
-  return (
-    <div className="feedback feedback-incorrect" style={isFirst ? undefined : { opacity: 0.35 }}>
-      <div className="feedback-content">
-        <div className="feedback-icon">⚡</div>
-        <div className="feedback-row">
-          <span className="log-prompt">{feedback.prompt}</span>
-          <span className="log-sep">·</span>
-          <span className="log-wrong">{feedback.userAnswer}</span>
-          <span className="log-arrow">→</span>
-          <span className="log-correct">{feedback.correctAnswer}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function QuizCard({
-  question,
-  onAnswer,
-  pressedKey,
-}: {
-  question: QuizQuestion;
-  onAnswer: (option: string, correct: boolean) => void;
-  pressedKey: number | null;
-}) {
-  return (
-    <div className="quiz-card">
-      <div className="quiz-prompt">{question.prompt}</div>
-      <div className="quiz-options">
-        {question.options.map((opt, i) => (
-          <button
-            key={`${opt.label}-${i}`}
-            className={`option-btn${pressedKey === i + 1 ? " option-btn-pressed" : ""}`}
-            onClick={() => onAnswer(opt.label, opt.isCorrect)}
-          >
-            <span className="option-key">{i + 1}</span>
-            <span className="option-label">{opt.label}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ScoreDisplay({ stats }: { stats: StatsMap }) {
-  const totals = Object.values(stats).reduce(
-    (acc, s) => ({ correct: acc.correct + s.correct, incorrect: acc.incorrect + s.incorrect }),
-    { correct: 0, incorrect: 0 }
-  );
-  const total = totals.correct + totals.incorrect;
-  const rate = total > 0 ? Math.round((totals.correct / total) * 100) : 0;
-
-  return (
-    <div className="score-display">
-      <span className="score-correct">✓ {totals.correct}</span>
-      <span className="score-incorrect">✗ {totals.incorrect}</span>
-      <span className="score-rate">{rate}%</span>
-    </div>
-  );
-}
+import { ProgressBar } from "./components/ProgressBar";
+import { StrategySelector } from "./components/StrategySelector";
+import { Feedback } from "./components/Feedback";
+import type { FeedbackEntry } from "./components/Feedback";
+import { QuizCard } from "./components/QuizCard";
+import { ScoreDisplay } from "./components/ScoreDisplay";
+import { ConfirmDialog } from "./components/ConfirmDialog";
+import "./App.css";
 
 export default function App() {
   const [words, setWords] = useState<WordEntry[]>([]);
   const [stats, setStats] = useState<StatsMap>({});
   const [strategyIndex, setStrategyIndex] = useState(0);
   const [question, setQuestion] = useState<QuizQuestion | null>(null);
-  const [errorLog, setErrorLog] = useState<{ prompt: string; userAnswer: string; correctAnswer: string }[]>([]);
+  const [errorLog, setErrorLog] = useState<FeedbackEntry[]>([]);
+  const [confirmReset, setConfirmReset] = useState(false);
   const errorLogRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -156,6 +55,14 @@ export default function App() {
       generateNextQuestion();
     }
   }, [loading, words, question, generateNextQuestion]);
+
+  const handleReset = useCallback(async () => {
+    const newStats = await resetStats();
+    setStats(newStats);
+    setErrorLog([]);
+    setQuestion(null);
+    setConfirmReset(false);
+  }, []);
 
   const handleAnswer = useCallback(
     async (userAnswer: string, wasCorrect: boolean) => {
@@ -218,8 +125,13 @@ export default function App() {
             }}
           />
           <ScoreDisplay stats={stats} />
+          <button className="reset-btn" onClick={() => setConfirmReset(true)} title="Resetovat statistiky">↺</button>
         </div>
       </header>
+
+      {confirmReset && (
+        <ConfirmDialog onConfirm={handleReset} onCancel={() => setConfirmReset(false)} />
+      )}
 
       <main className="main">
         <section className="top-half" ref={errorLogRef}>

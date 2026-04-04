@@ -16,3 +16,8 @@ export async function saveAnswer(wordKey: string, correct: boolean): Promise<Sta
   });
   return res.json();
 }
+
+export async function resetStats(): Promise<StatsMap> {
+  const res = await fetch(`${API_BASE}/api/stats`, { method: "DELETE" });
+  return res.json();
+}
