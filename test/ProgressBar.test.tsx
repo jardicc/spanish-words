@@ -28,13 +28,30 @@ describe("ProgressBar", () => {
     expect(q(el, "progress-percent")!.textContent).toBe("4%");
   });
 
-  it("does not count words with errors as mastered", () => {
+  it("does not count word with <80% success rate as mastered", () => {
     const stats: StatsMap = {
-      casa: { correct: 10, incorrect: 1 },
+      casa: { correct: 3, incorrect: 2 }, // 60% < 80%
     };
     const el = render(<ProgressBar stats={stats} totalWords={10} />);
     expect(q(el, "progress-mastered")!.textContent).toBe("0");
     expect(q(el, "progress-percent")!.textContent).toBe("0%");
+  });
+
+  it("counts word at exactly 80% success rate as mastered", () => {
+    const stats: StatsMap = {
+      casa: { correct: 4, incorrect: 1 }, // 80% = threshold
+    };
+    const el = render(<ProgressBar stats={stats} totalWords={10} />);
+    expect(q(el, "progress-mastered")!.textContent).toBe("1");
+    expect(q(el, "progress-percent")!.textContent).toBe("10%");
+  });
+
+  it("counts word above 80% success rate as mastered", () => {
+    const stats: StatsMap = {
+      casa: { correct: 10, incorrect: 1 }, // ~91% > 80%
+    };
+    const el = render(<ProgressBar stats={stats} totalWords={10} />);
+    expect(q(el, "progress-mastered")!.textContent).toBe("1");
   });
 
   it("renders progress fill width", () => {

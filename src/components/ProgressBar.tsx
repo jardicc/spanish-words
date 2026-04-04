@@ -1,11 +1,12 @@
 import React from "react";
 import type { StatsMap } from "../types";
+import { MASTERY_THRESHOLD, MASTERY_MIN_ATTEMPTS } from "../constants";
 import "./ProgressBar.css";
 
 export function ProgressBar({ stats, totalWords }: { stats: StatsMap; totalWords: number }) {
   const mastered = Object.values(stats).filter((s) => {
     const total = s.correct + s.incorrect;
-    return total >= 3 && s.correct / total >= 0.999;
+    return total >= MASTERY_MIN_ATTEMPTS && s.correct / total >= MASTERY_THRESHOLD;
   }).length;
 
   const attempted = Object.keys(stats).length;

@@ -1,5 +1,6 @@
 import type { WordEntry, QuizQuestion, QuizOption, StatsMap, Strategy } from "./types";
 import { findSimilarWords } from "./levenshtein";
+import { MASTERY_THRESHOLD, MASTERY_MIN_ATTEMPTS } from "./constants";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -22,8 +23,8 @@ function pickWord(words: WordEntry[], stats: StatsMap): WordEntry | null {
     const s = stats[key];
     if (!s) return true;
     const total = s.correct + s.incorrect;
-    if (total < 3) return true;
-    return getSuccessRate(stats, key) < 0.999;
+    if (total < MASTERY_MIN_ATTEMPTS) return true;
+    return getSuccessRate(stats, key) < MASTERY_THRESHOLD;
   });
 
   if (eligible.length === 0) return null;

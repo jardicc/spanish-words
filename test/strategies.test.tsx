@@ -79,6 +79,30 @@ describe("allStrategies", () => {
     expect(labels).toEqual(["el", "la"]);
   });
 
+  it("excludes words with ≥80% success rate and ≥3 attempts", () => {
+    // 4 correct / 5 total = 80% → should be excluded
+    const stats80: Record<string, { correct: number; incorrect: number }> = {};
+    for (const w of words) {
+      stats80[w.word] = { correct: 4, incorrect: 1 };
+      stats80[`article:${w.word}`] = { correct: 4, incorrect: 1 };
+    }
+    for (const s of allStrategies) {
+      expect(s.generateQuestion(words, stats80)).toBeNull();
+    }
+  });
+
+  it("includes words with <80% success rate", () => {
+    // 3 correct / 5 total = 60% → should still be included
+    const stats60: Record<string, { correct: number; incorrect: number }> = {};
+    for (const w of words) {
+      stats60[w.word] = { correct: 3, incorrect: 2 };
+      stats60[`article:${w.word}`] = { correct: 3, incorrect: 2 };
+    }
+    for (const s of allStrategies) {
+      expect(s.generateQuestion(words, stats60)).not.toBeNull();
+    }
+  });
+
   it("returns null when all words mastered", () => {
     const fullStats: Record<string, { correct: number; incorrect: number }> = {};
     for (const w of words) {

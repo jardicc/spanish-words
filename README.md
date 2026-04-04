@@ -9,7 +9,7 @@ A browser-based flashcard app for learning Spanish vocabulary. It quizzes you on
   - *Česky → Španělsky* — given a Czech translation, pick the Spanish word
   - *Členy* — given a noun, pick the correct article (`el` / `la`)
 - **Multiple datasets** — switch between any `.csv` file in `resources/` via a dropdown; each dataset has its own independent statistics
-- **Smart word selection** — words you get wrong appear more often; mastered words (≥3 attempts, ≥99.9% correct) are retired
+- **Smart word selection** — words you get wrong appear more often; mastered words (≥3 attempts, ≥80% correct) are retired
 - **Persistent stats** — answers are saved per dataset to `data/stats-<filename>.json` via a REST API and survive server restarts
 - **Error log** — wrong answers accumulate in the top half of the screen for review during the session
 - **Keyboard support** — press `1`–`6` to select answers without touching the mouse; key highlight shows green (correct) or red (wrong) before releasing
