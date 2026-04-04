@@ -1,6 +1,6 @@
 # Spanish Words
 
-A browser-based flashcard app for learning Spanish vocabulary. It quizzes you on the top 1000 most common Spanish words using multiple quiz strategies, tracks your progress per word, and prioritizes words you struggle with.
+A browser-based flashcard app for learning Spanish vocabulary. It quizzes you on word sets loaded from CSV files using multiple quiz strategies, tracks your progress per word and per dataset, and prioritizes words you struggle with.
 
 ## What it does
 
@@ -8,10 +8,11 @@ A browser-based flashcard app for learning Spanish vocabulary. It quizzes you on
   - *Španělsky → Česky* — given a Spanish word, pick the Czech translation
   - *Česky → Španělsky* — given a Czech translation, pick the Spanish word
   - *Členy* — given a noun, pick the correct article (`el` / `la`)
+- **Multiple datasets** — switch between any `.csv` file in `resources/` via a dropdown; each dataset has its own independent statistics
 - **Smart word selection** — words you get wrong appear more often; mastered words (≥3 attempts, ≥99.9% correct) are retired
-- **Persistent stats** — answers are saved to `data/stats.json` via a REST API and survive server restarts
+- **Persistent stats** — answers are saved per dataset to `data/stats-<filename>.json` via a REST API and survive server restarts
 - **Error log** — wrong answers accumulate in the top half of the screen for review during the session
-- **Keyboard support** — press `1`–`6` to select answers without touching the mouse
+- **Keyboard support** — press `1`–`6` to select answers without touching the mouse; key highlight shows green (correct) or red (wrong) before releasing
 
 ## Tech stack
 
@@ -22,7 +23,7 @@ A browser-based flashcard app for learning Spanish vocabulary. It quizzes you on
 | Bundler | `Bun.build()` |
 | Server | Custom Bun HTTP server (`server.ts`) |
 | Styling | Component-scoped CSS files |
-| Tests | Vitest + `react-dom/server` |
+| Tests | Vitest + happy-dom + `react-dom/client` |
 
 ## Project structure
 
@@ -34,7 +35,7 @@ src/
   types.ts               # Shared TypeScript interfaces
   strategies.ts          # Quiz strategy implementations
   csv.ts                 # CSV parser
-  stats-client.ts        # API client for stats (load / save / reset)
+  stats-client.ts        # API client for stats (load / save / reset), dataset-aware
   levenshtein.ts         # Used for generating plausible wrong answers
   styles/
     base.css             # Global reset and body styles
@@ -46,13 +47,15 @@ src/
     ScoreDisplay.tsx     # Session correct/incorrect counts and rate
     ConfirmDialog.tsx    # Reset stats confirmation overlay
 resources/
-  top1000.csv            # Vocabulary data (rank, article, word, EN, CZ, part of speech)
+  top1000.csv            # Top 1000 Spanish words (rank, article, word, EN, CZ, part of speech)
+  cisla100.csv           # Numbers 1–100
 data/
-  stats.json             # Persisted per-word stats (auto-created)
+  stats-<dataset>.json   # Per-dataset persisted stats (auto-created)
 test/
-  *.test.tsx             # Integration tests for each component and strategy logic
+  render.tsx             # DOM render helper: render(), q(), qAll() using happy-dom GlobalWindow
+  *.test.tsx/ts          # Component, strategy, API client and App integration tests
 server.ts                # HTTP server: serves HTML, bundle, stats API, live reload
-vitest.config.ts         # Vitest configuration
+vitest.config.ts         # Vitest configuration (environment: happy-dom)
 wallaby.js               # Wallaby configuration (autoDetect)
 ```
 
@@ -60,9 +63,16 @@ wallaby.js               # Wallaby configuration (autoDetect)
 
 1. On startup, `server.ts` builds the React bundle via `Bun.build()` and computes an MD5 hash of the output for cache-busting.
 2. The server inlines the compiled CSS directly into the HTML response — no external stylesheet requests.
-3. The browser loads the bundle, fetches `/api/words` (the raw CSV) and `/api/stats`, then generates the first quiz question.
-4. Each answered question POSTs to `/api/stats`; the server updates the in-memory stats object and flushes it to `data/stats.json`.
-5. During development (`bun run dev`), `fs.watch` monitors `src/` for changes, rebuilds on save with a 100 ms debounce, and notifies the browser via a Server-Sent Events endpoint (`/api/dev-reload`) which triggers an automatic page reload.
+3. The browser loads the bundle, fetches `/api/datasets` (list of available CSVs), `/api/words?dataset=<file>` and `/api/stats?dataset=<file>`, then generates the first quiz question.
+4. Each answered question POSTs to `/api/stats` with `{ wordKey, correct, dataset }` in the body; the server updates the in-memory stats for that dataset and flushes it to `data/stats-<dataset>.json`.
+5. Switching datasets reloads words and stats for the new file; the reset button deletes only the active dataset's stats.
+6. During development (`bun run dev`), `fs.watch` monitors `src/` for changes, rebuilds on save with a 100 ms debounce, and notifies the browser via a Server-Sent Events endpoint (`/api/dev-reload`) which triggers an automatic page reload.
+
+## Adding a new dataset
+
+Drop any `.csv` file with the same column layout into `resources/` and restart the server — it will appear in the dropdown automatically.
+
+Expected column order: `Rank, Article, Word, Translation (EN), Czech, Part of Speech`
 
 ## Getting started
 
@@ -89,4 +99,4 @@ bunx vitest run        # single run
 bunx vitest            # watch mode
 ```
 
-Tests use `react-dom/server` (`renderToStaticMarkup`) to render components to HTML and assert on their structure and content without a DOM or browser.
+Tests use `happy-dom` (`GlobalWindow`) to provide a real DOM environment and render components via `react-dom/client` (`createRoot`). Component tests query elements using `[data-test]` attributes via the `render()` / `q()` / `qAll()` helpers in `test/render.tsx`. App integration tests mock `fetch` and use React `act()` to flush async effects.

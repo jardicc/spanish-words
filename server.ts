@@ -2,8 +2,6 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync, watch, readdirSync 
 import { join } from "path";
 import { createHash } from "crypto";
 
-const STATS_FILE = join(import.meta.dir, "data", "stats.json");
-const CSV_FILE = join(import.meta.dir, "resources", "top1000.csv");
 const DIST_DIR = join(import.meta.dir, "dist");
 
 let bundleHash = "";
@@ -65,20 +63,32 @@ function scheduleRebuild() {
 
 watch(join(import.meta.dir, "src"), { recursive: true }, scheduleRebuild);
 
-function loadStatsFromDisk(): Record<string, { correct: number; incorrect: number }> {
-  if (!existsSync(STATS_FILE)) return {};
+function statsFile(dataset: string) {
+  return join(import.meta.dir, "data", `stats-${dataset}.json`);
+}
+
+function loadStatsFromDisk(dataset: string): Record<string, { correct: number; incorrect: number }> {
+  const file = statsFile(dataset);
+  if (!existsSync(file)) return {};
   try {
-    return JSON.parse(readFileSync(STATS_FILE, "utf-8"));
+    return JSON.parse(readFileSync(file, "utf-8"));
   } catch {
     return {};
   }
 }
 
-function saveStatsToDisk(stats: Record<string, { correct: number; incorrect: number }>) {
-  writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2), "utf-8");
+function saveStatsToDisk(dataset: string, stats: Record<string, { correct: number; incorrect: number }>) {
+  writeFileSync(statsFile(dataset), JSON.stringify(stats, null, 2), "utf-8");
 }
 
-let stats = loadStatsFromDisk();
+const statsCache = new Map<string, Record<string, { correct: number; incorrect: number }>>();
+
+function getStats(dataset: string) {
+  if (!statsCache.has(dataset)) {
+    statsCache.set(dataset, loadStatsFromDisk(dataset));
+  }
+  return statsCache.get(dataset)!;
+}
 
 function getIndexHTML() {
   return `<!DOCTYPE html>
@@ -129,36 +139,38 @@ const server = Bun.serve({
 
     // API: Get stats
     if (url.pathname === "/api/stats" && req.method === "GET") {
-      return Response.json(stats);
+      const dataset = url.searchParams.get("dataset") ?? "top1000.csv";
+      return Response.json(getStats(dataset));
     }
 
     // API: Reset stats
     if (url.pathname === "/api/stats" && req.method === "DELETE") {
-      stats = {};
-      saveStatsToDisk(stats);
-      return Response.json(stats);
+      const dataset = url.searchParams.get("dataset") ?? "top1000.csv";
+      statsCache.set(dataset, {});
+      saveStatsToDisk(dataset, {});
+      return Response.json({});
     }
 
     // API: Save answer
     if (url.pathname === "/api/stats" && req.method === "POST") {
-      const body = await req.json() as { wordKey: string; correct: boolean };
+      const body = await req.json() as { wordKey: string; correct: boolean; dataset?: string };
       const { wordKey, correct } = body;
+      const dataset = body.dataset ?? "top1000.csv";
 
       if (typeof wordKey !== "string" || typeof correct !== "boolean") {
         return new Response("Bad request", { status: 400 });
       }
 
+      const stats = getStats(dataset);
       if (!stats[wordKey]) {
         stats[wordKey] = { correct: 0, incorrect: 0 };
       }
-
       if (correct) {
         stats[wordKey].correct++;
       } else {
         stats[wordKey].incorrect++;
       }
-
-      saveStatsToDisk(stats);
+      saveStatsToDisk(dataset, stats);
       return Response.json(stats);
     }
 

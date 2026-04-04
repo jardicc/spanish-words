@@ -27,14 +27,21 @@ const SAMPLE_CSV = `Rank,Article,Word,Translation,Czech,PoS
 6,el,libro,book,kniha,noun
 `;
 
-function makeFetch(stats: Record<string, { correct: number; incorrect: number }> = {}) {
-  return vi.fn((url: string) => {
+function makeFetch(
+  stats: Record<string, { correct: number; incorrect: number }> = {},
+  datasets = ["top1000.csv"],
+) {
+  return vi.fn((url: string, init?: RequestInit) => {
     if (url.includes("/api/datasets"))
-      return Promise.resolve({ ok: true, json: () => Promise.resolve(["top1000.csv"]) });
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(datasets) });
     if (url.includes("/api/words"))
       return Promise.resolve({ ok: true, text: () => Promise.resolve(SAMPLE_CSV) });
-    if (url.includes("/api/stats"))
+    if (url.includes("/api/stats") && (!init || init.method === "GET" || !init.method))
       return Promise.resolve({ ok: true, json: () => Promise.resolve(stats) });
+    if (url.includes("/api/stats") && init?.method === "POST")
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(stats) });
+    if (url.includes("/api/stats") && init?.method === "DELETE")
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
     return Promise.reject(new Error(`Unexpected fetch: ${url}`));
   });
 }
@@ -84,5 +91,54 @@ describe("App", () => {
     });
     await act(flushAll);
     expect(q(container, "quiz-card")).toBeNull();
+  });
+
+  it("loads stats with current dataset query param", async () => {
+    const fetchMock = makeFetch();
+    _g.fetch = fetchMock;
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<App />);
+    });
+    await act(flushAll);
+    const statsCalls = (fetchMock.mock.calls as [string][])
+      .filter(([url]) => url.includes("/api/stats"));
+    expect(statsCalls.length).toBeGreaterThan(0);
+    expect(statsCalls[0][0]).toContain("dataset=top1000.csv");
+  });
+
+  it("loads separate stats when switching datasets", async () => {
+    const statsA = { gato: { correct: 5, incorrect: 0 } };
+    const statsB = { uno: { correct: 2, incorrect: 1 } };
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (url.includes("/api/datasets"))
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(["top1000.csv", "cisla100.csv"]) });
+      if (url.includes("/api/words"))
+        return Promise.resolve({ ok: true, text: () => Promise.resolve(SAMPLE_CSV) });
+      if (url.includes("/api/stats")) {
+        const stats = url.includes("cisla100.csv") ? statsB : statsA;
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(stats) });
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+    _g.fetch = fetchMock;
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<App />);
+    });
+    await act(flushAll);
+
+    // Switch dataset via the select element
+    const select = container.querySelector(".dataset-select") as HTMLSelectElement;
+    expect(select).not.toBeNull();
+    await act(async () => {
+      select.value = "cisla100.csv";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await act(flushAll);
+
+    const statsCalls = (fetchMock.mock.calls as [string][])
+      .filter(([url]) => url.includes("/api/stats") && url.includes("cisla100.csv"));
+    expect(statsCalls.length).toBeGreaterThan(0);
   });
 });

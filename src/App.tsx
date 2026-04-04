@@ -46,7 +46,7 @@ export default function App() {
     setLoading(true);
     Promise.all([
       fetch(`/api/words?dataset=${encodeURIComponent(dataset)}`).then((r) => r.text()),
-      loadStats(),
+      loadStats(dataset),
     ]).then(([csv, savedStats]) => {
       const parsed = parseCSV(csv);
       setWords(parsed);
@@ -72,12 +72,12 @@ export default function App() {
   }, [loading, words, question, generateNextQuestion]);
 
   const handleReset = useCallback(async () => {
-    const newStats = await resetStats();
+    const newStats = await resetStats(dataset);
     setStats(newStats);
     setErrorLog([]);
     setQuestion(null);
     setConfirmReset(false);
-  }, []);
+  }, [dataset]);
 
   const handleAnswer = useCallback(
     async (userAnswer: string, wasCorrect: boolean) => {
@@ -88,11 +88,11 @@ export default function App() {
           { prompt: question.prompt, userAnswer, correctAnswer: question.correctAnswer },
         ]);
       }
-      const newStats = await saveAnswer(question.wordKey, wasCorrect);
+      const newStats = await saveAnswer(question.wordKey, wasCorrect, dataset);
       setStats(newStats);
       generateNextQuestion(newStats);
     },
-    [question, generateNextQuestion]
+    [question, generateNextQuestion, dataset]
   );
 
   // Keyboard handler
