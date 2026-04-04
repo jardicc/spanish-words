@@ -1,4 +1,4 @@
-import { readFileSync, existsSync, writeFileSync, mkdirSync, watch } from "fs";
+import { readFileSync, existsSync, writeFileSync, mkdirSync, watch, readdirSync } from "fs";
 import { join } from "path";
 import { createHash } from "crypto";
 
@@ -162,9 +162,25 @@ const server = Bun.serve({
       return Response.json(stats);
     }
 
+    // API: List available datasets
+    if (url.pathname === "/api/datasets") {
+      const files = readdirSync(join(import.meta.dir, "resources"))
+        .filter((f) => f.endsWith(".csv"));
+      return Response.json(files);
+    }
+
     // API: Get CSV words
     if (url.pathname === "/api/words") {
-      const csv = readFileSync(CSV_FILE, "utf-8");
+      const dataset = url.searchParams.get("dataset") ?? "top1000.csv";
+      // Prevent path traversal
+      if (dataset.includes("/") || dataset.includes("\\") || dataset.includes("..")) {
+        return new Response("Bad request", { status: 400 });
+      }
+      const csvPath = join(import.meta.dir, "resources", dataset);
+      if (!existsSync(csvPath)) {
+        return new Response("Not found", { status: 404 });
+      }
+      const csv = readFileSync(csvPath, "utf-8");
       return new Response(csv, {
         headers: { "Content-Type": "text/plain; charset=utf-8" },
       });

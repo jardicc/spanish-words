@@ -19,6 +19,8 @@ export default function App() {
   const [question, setQuestion] = useState<QuizQuestion | null>(null);
   const [errorLog, setErrorLog] = useState<FeedbackEntry[]>([]);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [datasets, setDatasets] = useState<string[]>([]);
+  const [dataset, setDataset] = useState<string>("top1000.csv");
   const errorLogRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -29,18 +31,31 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [pressedKey, setPressedKey] = useState<number | null>(null);
 
+  // Load datasets list once
+  useEffect(() => {
+    fetch("/api/datasets")
+      .then((r) => r.json())
+      .then((list: string[]) => {
+        setDatasets(list);
+        if (list.length > 0) setDataset(list[0]);
+      });
+  }, []);
+
   // Load CSV + stats
   useEffect(() => {
+    setLoading(true);
     Promise.all([
-      fetch("/api/words").then((r) => r.text()),
+      fetch(`/api/words?dataset=${encodeURIComponent(dataset)}`).then((r) => r.text()),
       loadStats(),
     ]).then(([csv, savedStats]) => {
       const parsed = parseCSV(csv);
       setWords(parsed);
       setStats(savedStats);
+      setQuestion(null);
+      setErrorLog([]);
       setLoading(false);
     });
-  }, []);
+  }, [dataset]);
 
   const generateNextQuestion = useCallback(() => {
     if (words.length === 0) return;
@@ -125,6 +140,17 @@ export default function App() {
             }}
           />
           <ScoreDisplay stats={stats} />
+          {datasets.length > 1 && (
+            <select
+              className="dataset-select"
+              value={dataset}
+              onChange={(e) => setDataset(e.target.value)}
+            >
+              {datasets.map((d) => (
+                <option key={d} value={d}>{d.replace(/\.csv$/i, "")}</option>
+              ))}
+            </select>
+          )}
           <button className="reset-btn" onClick={() => setConfirmReset(true)} title="Resetovat statistiky">↺</button>
         </div>
       </header>
