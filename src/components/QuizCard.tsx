@@ -18,7 +18,7 @@ export function QuizCard({
         {question.options.map((opt, i) => (
           <button
             key={`${opt.label}-${i}`}
-            className={`option-btn${pressedKey === i + 1 ? " option-btn-pressed" : ""}`}
+            className={`option-btn${pressedKey === i + 1 ? (opt.isCorrect ? " option-btn-correct" : " option-btn-wrong") : ""}`}
             onClick={() => onAnswer(opt.label, opt.isCorrect)}
             data-test="option-btn"
             data-pressed={pressedKey === i + 1}
