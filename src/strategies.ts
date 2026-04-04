@@ -131,13 +131,10 @@ export const articleStrategy: Strategy = {
     const entry = pickWord(nouns, stats);
     if (!entry) return null;
 
-    const articles = ["el", "la", "los", "las", "un", "una"];
-    const options: QuizOption[] = shuffle(
-      articles.map((a) => ({
-        label: a,
-        isCorrect: a === entry.article,
-      }))
-    );
+    const options: QuizOption[] = [
+      { label: "el", isCorrect: entry.article === "el" },
+      { label: "la", isCorrect: entry.article === "la" },
+    ];
 
     return {
       prompt: `___ ${entry.word} (${entry.translation})`,
