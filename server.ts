@@ -1,4 +1,4 @@
-import { readFileSync, existsSync, writeFileSync, mkdirSync } from "fs";
+import { readFileSync, existsSync, writeFileSync, mkdirSync, watch } from "fs";
 import { join } from "path";
 
 const STATS_FILE = join(import.meta.dir, "data", "stats.json");
@@ -16,19 +16,46 @@ if (!existsSync(DIST_DIR)) {
   mkdirSync(DIST_DIR, { recursive: true });
 }
 
-console.log("Building client bundle...");
-const buildResult = await Bun.build({
-  entrypoints: [join(import.meta.dir, "src", "index.tsx")],
-  outdir: DIST_DIR,
-  minify: false,
-  target: "browser",
-});
-
-if (!buildResult.success) {
-  console.error("Build failed:", buildResult.logs);
-  process.exit(1);
+async function buildClient() {
+  const result = await Bun.build({
+    entrypoints: [join(import.meta.dir, "src", "index.tsx")],
+    outdir: DIST_DIR,
+    minify: false,
+    target: "browser",
+  });
+  if (!result.success) {
+    console.error("Build failed:", result.logs);
+  } else {
+    console.log("Client bundle built.");
+  }
+  return result.success;
 }
-console.log("Client bundle built successfully.");
+
+console.log("Building client bundle...");
+if (!await buildClient()) process.exit(1);
+
+// SSE clients waiting for reload signal
+const reloadClients = new Set<ReadableStreamDefaultController>();
+
+function notifyReload() {
+  for (const ctrl of reloadClients) {
+    try { ctrl.enqueue("data: reload\n\n"); } catch { reloadClients.delete(ctrl); }
+  }
+}
+
+// Watch src/ and styles.css for changes
+let rebuildTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleRebuild() {
+  if (rebuildTimer) clearTimeout(rebuildTimer);
+  rebuildTimer = setTimeout(async () => {
+    console.log("Change detected, rebuilding...");
+    await buildClient();
+    notifyReload();
+  }, 100);
+}
+
+watch(join(import.meta.dir, "src"), { recursive: true }, scheduleRebuild);
+watch(join(import.meta.dir, "styles.css"), scheduleRebuild);
 
 function loadStatsFromDisk(): Record<string, { correct: number; incorrect: number }> {
   if (!existsSync(STATS_FILE)) return {};
@@ -56,6 +83,10 @@ const indexHTML = `<!DOCTYPE html>
 <body>
   <div id="root"></div>
   <script type="module" src="/bundle.js"></script>
+  <script>
+    const es = new EventSource('/api/dev-reload');
+    es.onmessage = () => location.reload();
+  </script>
 </body>
 </html>`;
 
@@ -63,6 +94,28 @@ const server = Bun.serve({
   port: 3000,
   async fetch(req) {
     const url = new URL(req.url);
+
+    // Dev: SSE reload endpoint
+    if (url.pathname === "/api/dev-reload") {
+      let ctrl: ReadableStreamDefaultController;
+      const stream = new ReadableStream({
+        start(c) {
+          ctrl = c;
+          ctrl.enqueue("retry: 1000\n\n");
+          reloadClients.add(ctrl);
+        },
+        cancel() {
+          reloadClients.delete(ctrl);
+        },
+      });
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        },
+      });
+    }
 
     // API: Get stats
     if (url.pathname === "/api/stats" && req.method === "GET") {
