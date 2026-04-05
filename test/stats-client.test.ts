@@ -46,7 +46,7 @@ describe("saveAnswer", () => {
   it("uses the provided dataset, not a hardcoded one", async () => {
     _g.fetch = mockFetch({});
     await saveAnswer("uno", false, "cisla100.csv");
-    const body = JSON.parse((_g.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+    const body = JSON.parse((_g.fetch as ReturnType<typeof vi.fn>).mock.calls[0]![1].body);
     expect(body.dataset).toBe("cisla100.csv");
   });
 });

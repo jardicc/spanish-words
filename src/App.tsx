@@ -37,7 +37,7 @@ export default function App() {
       .then((r) => r.json())
       .then((list: string[]) => {
         setDatasets(list);
-        if (list.length > 0) setDataset(list[0]);
+        if (list.length > 0) setDataset(list[0]!);
       });
   }, []);
 
@@ -60,6 +60,7 @@ export default function App() {
   const generateNextQuestion = useCallback((withStats?: StatsMap) => {
     if (words.length === 0) return;
     const strategy = allStrategies[strategyIndex];
+    if (!strategy) return;
     const q = strategy.generateQuestion(words, withStats ?? stats);
     setQuestion(q);
   }, [words, stats, strategyIndex]);
@@ -109,7 +110,7 @@ export default function App() {
       const num = parseInt(e.key, 10);
       if (num >= 1 && num <= 6 && question.options[num - 1]) {
         setPressedKey(null);
-        const opt = question.options[num - 1];
+        const opt = question.options[num - 1]!;
         handleAnswer(opt.label, opt.isCorrect);
       }
     };

@@ -104,7 +104,7 @@ describe("App", () => {
     const statsCalls = (fetchMock.mock.calls as [string][])
       .filter(([url]) => url.includes("/api/stats"));
     expect(statsCalls.length).toBeGreaterThan(0);
-    expect(statsCalls[0][0]).toContain("dataset=top1000.csv");
+    expect(statsCalls[0]![0]).toContain("dataset=top1000.csv");
   });
 
   it("loads separate stats when switching datasets", async () => {
@@ -133,7 +133,8 @@ describe("App", () => {
     expect(select).not.toBeNull();
     await act(async () => {
       select.value = "cisla100.csv";
-      select.dispatchEvent(new Event("change", { bubbles: true }));
+      const ChangeEvent = (select.ownerDocument!.defaultView as any).Event as typeof Event;
+      select.dispatchEvent(new ChangeEvent("change", { bubbles: true }));
     });
     await act(flushAll);
 
