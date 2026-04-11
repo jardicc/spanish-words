@@ -6,9 +6,9 @@ import { StrategySelector } from "../src/components/StrategySelector";
 import type { Strategy } from "../src/types";
 
 const mockStrategies: Strategy[] = [
-  { name: "Strategie A", description: "Popis A", generateQuestion: () => null },
-  { name: "Strategie B", description: "Popis B", generateQuestion: () => null },
-  { name: "Strategie C", description: "Popis C", generateQuestion: () => null },
+  {name: "Strategie A", description: "Popis A", generateQuestion: () => null, keyPrefix: "es:"},
+  {name: "Strategie B", description: "Popis B", generateQuestion: () => null, keyPrefix: "es:"},
+  {name: "Strategie C", description: "Popis C", generateQuestion: () => null, keyPrefix: "es:"},
 ];
 
 describe("StrategySelector", () => {
