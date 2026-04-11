@@ -1,48 +1,81 @@
 import { readFileSync, existsSync, writeFileSync, mkdirSync, watch, readdirSync } from "fs";
-import { join } from "path";
-import { createHash } from "crypto";
+import { join, dirname } from "path";
+import {createHash} from "crypto";
 
-const DIST_DIR = join(import.meta.dir, "dist");
+const exePath = process.execPath;
+console.log(`Executable path: ${exePath}`);
+
+// On Windows, Bun compiled executables have import.meta.dir like "B:\~BUN\root"
+// On Linux/Mac it starts with "/$bunfs/"
+const DEV = !import.meta.dir.startsWith("/$bunfs/") && !import.meta.dir.includes("~BUN");
+const BASE_DIR = DEV ? import.meta.dir : dirname(exePath);
+
+// Keep the console window open on any unhandled crash in compiled mode.
+if (!DEV) {
+  process.on("uncaughtException", (err) => {
+    console.error("\nNEOČEKÁVANÁ CHYBA:", err.message);
+    console.error(err.stack ?? "");
+    console.error("\nStiskni Enter pro zavření okna...");
+    const buf = Buffer.alloc(1);
+    try { require("fs").readSync(0, buf, 0, 1, null); } catch {}
+    process.exit(1);
+  });
+}
+
+const DIST_DIR = join(BASE_DIR, "dist");
 
 let bundleHash = "";
 
 // Ensure data directory exists
-const dataDir = join(import.meta.dir, "data");
+const dataDir = join(BASE_DIR, "data");
 if (!existsSync(dataDir)) {
+  console.log(`📁 Vytvářím "${dataDir}" pro ukládání statistik...`);
   mkdirSync(dataDir, { recursive: true });
 }
 
-// Build client bundle
-if (!existsSync(DIST_DIR)) {
-  mkdirSync(DIST_DIR, { recursive: true });
+/** In compiled mode, show an error and wait for Enter before exiting so the window doesn't vanish. */
+function fatalError(message: string): never {
+  console.error(`\nERROR: ${message}`);
+  if (!DEV) {
+    console.error("\nStiskni Enter pro zavření okna...");
+    const buf = Buffer.alloc(1);
+    try { require("fs").readSync(0, buf, 0, 1, null); } catch {}
+  }
+  process.exit(1);
 }
 
-async function buildClient() {
+function computeBundleHash() {
+  const bundlePath = join(DIST_DIR, "index.js");
+  if (!existsSync(bundlePath)) return "";
+  return createHash("md5").update(readFileSync(bundlePath)).digest("hex").slice(0, 8);
+}
+
+if (DEV) {
+  // Dev mode: build client bundle from source and watch for changes
+  if (!existsSync(DIST_DIR)) {
+    console.log(`📁 Vytvářím "${DIST_DIR}" pro vývojový build...`);
+    mkdirSync(DIST_DIR, {recursive: true});
+  }
+
   const result = await Bun.build({
-    entrypoints: [join(import.meta.dir, "src", "index.tsx")],
+    entrypoints: [join(BASE_DIR, "src", "index.tsx")],
     outdir: DIST_DIR,
     minify: false,
     target: "browser",
   });
-  if (!result.success) {
-    console.error("Build failed:", result.logs);
-  } else {
-    bundleHash = createHash("md5")
-      .update(readFileSync(join(DIST_DIR, "index.js")))
-      .digest("hex")
-      .slice(0, 8);
-    console.log(`Client bundle built. (hash: ${bundleHash})`);
+  if (!result.success) { console.error("Build failed:", result.logs); process.exit(1); }
+  bundleHash = computeBundleHash();
+  console.log(`Client bundle built. (hash: ${bundleHash})`);
+} else {
+  // Production / compiled mode: dist/ must already exist next to the exe
+  bundleHash = computeBundleHash();
+  if (!bundleHash) {
+    fatalError(`dist/index.js not found next to the executable.\nOčekávaná cesta: ${join(DIST_DIR, "index.js")}\nSpusť 'bun run release' pro správné sestavení distribuce.`);
   }
-  return result.success;
 }
 
-console.log("Building client bundle...");
-if (!await buildClient()) process.exit(1);
-
-// SSE clients waiting for reload signal
+// SSE clients for dev-reload (dev mode only)
 const reloadClients = new Set<ReadableStreamDefaultController>();
-
-
 
 function notifyReload() {
   for (const ctrl of reloadClients) {
@@ -50,21 +83,30 @@ function notifyReload() {
   }
 }
 
-// Watch src/ and styles.css for changes
-let rebuildTimer: ReturnType<typeof setTimeout> | null = null;
-function scheduleRebuild() {
-  if (rebuildTimer) clearTimeout(rebuildTimer);
-  rebuildTimer = setTimeout(async () => {
-    console.log("Change detected, rebuilding...");
-    await buildClient();
-    notifyReload();
-  }, 100);
+// Watch src/ for changes (dev mode only)
+if (DEV) {
+  let rebuildTimer: ReturnType<typeof setTimeout> | null = null;
+  watch(join(BASE_DIR, "src"), { recursive: true }, () => {
+    if (rebuildTimer) clearTimeout(rebuildTimer);
+    rebuildTimer = setTimeout(async () => {
+      console.log("Change detected, rebuilding...");
+      const result = await Bun.build({
+        entrypoints: [join(BASE_DIR, "src", "index.tsx")],
+        outdir: DIST_DIR,
+        minify: false,
+        target: "browser",
+      });
+      if (result.success) {
+        bundleHash = computeBundleHash();
+        console.log(`Client bundle rebuilt. (hash: ${bundleHash})`);
+        notifyReload();
+      }
+    }, 100);
+  });
 }
 
-watch(join(import.meta.dir, "src"), { recursive: true }, scheduleRebuild);
-
 function statsFile(dataset: string) {
-  return join(import.meta.dir, "data", `stats-${dataset}.json`);
+  return join(BASE_DIR, "data", `stats-${dataset}.json`);
 }
 
 function loadStatsFromDisk(dataset: string): Record<string, { correct: number; incorrect: number }> {
@@ -91,6 +133,9 @@ function getStats(dataset: string) {
 }
 
 function getIndexHTML() {
+  const devReloadScript = DEV
+    ? `\n  <script>\n    const es = new EventSource('/api/dev-reload');\n    es.onmessage = () => location.reload();\n  </script>`
+    : "";
   return `<!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -101,11 +146,7 @@ function getIndexHTML() {
 </head>
 <body>
   <div id="root"></div>
-  <script type="module" src="/bundle.js?v=${bundleHash}"></script>
-  <script>
-    const es = new EventSource('/api/dev-reload');
-    es.onmessage = () => location.reload();
-  </script>
+  <script type="module" src="/bundle.js?v=${bundleHash}"></script>${devReloadScript}
 </body>
 </html>`;
 }
@@ -176,7 +217,7 @@ const server = Bun.serve({
 
     // API: List available datasets
     if (url.pathname === "/api/datasets") {
-      const files = readdirSync(join(import.meta.dir, "resources"))
+      const files = readdirSync(join(BASE_DIR, "resources"))
         .filter((f) => f.endsWith(".csv"));
       return Response.json(files);
     }
@@ -188,7 +229,7 @@ const server = Bun.serve({
       if (dataset.includes("/") || dataset.includes("\\") || dataset.includes("..")) {
         return new Response("Bad request", { status: 400 });
       }
-      const csvPath = join(import.meta.dir, "resources", dataset);
+      const csvPath = join(BASE_DIR, "resources", dataset);
       if (!existsSync(csvPath)) {
         return new Response("Not found", { status: 404 });
       }
@@ -214,3 +255,10 @@ const server = Bun.serve({
 });
 
 console.log(`🇪🇸 Španělská slovíčka běží na http://localhost:${server.port}`);
+
+if (!DEV) {
+  // Open browser automatically in production / compiled mode
+  const url = `http://localhost:${server.port}`;
+  Bun.spawnSync(["cmd", "/c", "start", url], { stdio: ["ignore", "ignore", "ignore"] });
+  console.log("Prohlížeč byl otevřen. Server běží — zavři toto okno pro ukončení.");
+}
