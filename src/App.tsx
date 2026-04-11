@@ -93,7 +93,7 @@ export default function App() {
   }, [question, handleAnswer, dispatch]);
 
   if (loading) {
-    return <div className="loading">Načítám slovíčka...</div>;
+    return <div className="loading">Načítám slovíčka…</div>;
   }
 
   return (
