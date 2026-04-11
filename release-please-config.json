@@ -3,14 +3,14 @@
     ".": {
       "release-type": "node",
       "changelog-sections": [
-        { "type": "feat", "section": "🚀 Nové funkce" },
-        { "type": "fix", "section": "🐛 Opravy" },
-        { "type": "perf", "section": "⚡ Výkon" },
-        { "type": "refactor", "section": "♻️ Refaktoring" },
-        { "type": "docs", "section": "📝 Dokumentace" },
-        { "type": "test", "section": "✅ Testy" },
+        { "type": "feat", "section": "🚀 New Features" },
+        { "type": "fix", "section": "🐛 Bug Fixes" },
+        { "type": "perf", "section": "⚡ Performance" },
+        { "type": "refactor", "section": "♻️ Refactoring" },
+        { "type": "docs", "section": "📝 Documentation" },
+        { "type": "test", "section": "✅ Tests" },
         { "type": "ci", "section": "🔧 CI/CD" },
-        { "type": "chore", "section": "🧹 Údržba", "hidden": true }
+        { "type": "chore", "section": "🧹 Maintenance", "hidden": true }
       ],
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true
