@@ -94,6 +94,7 @@ export default function App() {
 
   if (loading) {
     return <div className="loading">Načítám slovíčka…</div>;
+    // test
   }
 
   return (
