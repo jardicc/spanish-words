@@ -87,8 +87,8 @@ const quizSlice = createSlice({
   reducers: {
     setStrategyIndex(state, action: PayloadAction<number>) {
       state.strategyIndex = action.payload;
-      state.question = null;
       state.errorLog = [];
+      state.question = generateQuestion(state);
     },
     setConfirmReset(state, action: PayloadAction<boolean>) {
       state.confirmReset = action.payload;

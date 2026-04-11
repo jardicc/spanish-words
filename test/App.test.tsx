@@ -113,6 +113,30 @@ describe("App", () => {
     expect(statsCalls[0]![0]).toContain("dataset=top1000.csv");
   });
 
+  it("shows a quiz question after switching strategy even if previous strategy was fully mastered", async () => {
+    // All words mastered for strategy 0 (keyPrefix "es")
+    const mastered = Object.fromEntries(
+      ["gato", "casa", "correr", "perro", "mesa", "libro"].map(
+        (k) => [`es:${k}`, { correct: 5, incorrect: 0 }]
+      )
+    );
+    _g.fetch = makeFetch(mastered);
+    await act(async () => {
+      renderApp();
+    });
+    await act(flushAll);
+    // Strategy 0 should show "all done"
+    expect(q(container, "quiz-card")).toBeNull();
+
+    // Switch to strategy 1 (keyPrefix "cs") — no mastered words there
+    const strategyBtns = container.querySelectorAll('[data-test="strategy-btn"]');
+    await act(async () => {
+      (strategyBtns[1] as HTMLButtonElement).click();
+    });
+    // Should now show a quiz card, not "all done"
+    expect(q(container, "quiz-card")).not.toBeNull();
+  });
+
   it("loads separate stats when switching datasets", async () => {
     const statsA = { gato: { correct: 5, incorrect: 0 } };
     const statsB = { uno: { correct: 2, incorrect: 1 } };
