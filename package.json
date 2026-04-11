@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "bun run --hot server.ts",
+    "test": "bun test",
     "release": "bun scripts/release.ts",
     "start": "bun run server.ts"
   },

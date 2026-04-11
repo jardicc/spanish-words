@@ -2,13 +2,10 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync, watch, readdirSync 
 import { join, dirname } from "path";
 import {createHash} from "crypto";
 
-const exePath = process.execPath;
-console.log(`Executable path: ${exePath}`);
-
-// On Windows, Bun compiled executables have import.meta.dir like "B:\~BUN\root"
-// On Linux/Mac it starts with "/$bunfs/"
-const DEV = !import.meta.dir.startsWith("/$bunfs/") && !import.meta.dir.includes("~BUN");
-const BASE_DIR = DEV ? import.meta.dir : dirname(exePath);
+// In dev mode, process.execPath is the Bun runtime (e.g. "…/bun" or "…/bun.exe").
+// In compiled mode, it's our own binary (e.g. "…/spanish-words.exe").
+const DEV = /[/\\]bun(\.exe)?$/i.test(process.execPath);
+const BASE_DIR = DEV ? import.meta.dir : dirname(process.execPath);
 
 // Keep the console window open on any unhandled crash in compiled mode.
 if (!DEV) {

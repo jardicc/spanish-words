@@ -3,9 +3,11 @@
  *   1. Cleans and recreates release/
  *   2. Builds the client bundle (minified) → release/dist/
  *   3. Copies resources/ (CSV word lists) → release/resources/
- *   4. Compiles server.ts → release/spanish-words.exe
+ *   4. Compiles server.ts → release/spanish-words[.exe]
  *
- * Run with: bun run release
+ * Usage:
+ *   bun scripts/release.ts                          # local build (native platform)
+ *   bun scripts/release.ts --target=bun-windows-x64 # cross-compile for specific target
  */
 
 import { existsSync, mkdirSync, rmSync, readdirSync, copyFileSync } from "fs";
@@ -13,6 +15,12 @@ import { join } from "path";
 
 const root = join(import.meta.dir, "..");
 const releaseDir = join(root, "release");
+
+// Parse --target=<target> from CLI args
+const targetArg = process.argv.find((a) => a.startsWith("--target="));
+const target = targetArg?.split("=")[1];
+const isWindows = target ? target.includes("windows") : process.platform === "win32";
+const exeName = isWindows ? "spanish-words.exe" : "spanish-words";
 
 // ── 1. Clean release/ ────────────────────────────────────────────────────────
 if (existsSync(releaseDir)) {
@@ -45,12 +53,14 @@ for (const file of readdirSync(resourcesSrc)) {
 console.log("✅ Resources copied.");
 
 // ── 4. Compile server.ts → exe ───────────────────────────────────────────────
-console.log("🔨 Compiling server binary...");
-const exeResult = Bun.spawnSync([
+console.log(`🔨 Compiling server binary${target ? ` (target: ${target})` : ""}...`);
+const compileArgs = [
   "bun", "build", "--compile",
+  ...(target ? [`--target=${target}`] : []),
   join(root, "server.ts"),
-  "--outfile", join(releaseDir, "spanish-words"),
-], { cwd: root, stdio: ["inherit", "inherit", "inherit"] });
+  "--outfile", join(releaseDir, exeName.replace(/\.exe$/, "")),
+];
+const exeResult = Bun.spawnSync(compileArgs, { cwd: root, stdio: ["inherit", "inherit", "inherit"] });
 
 if (exeResult.exitCode !== 0) {
   console.error("Compilation failed.");
@@ -59,7 +69,7 @@ if (exeResult.exitCode !== 0) {
 
 console.log(`
 🎉 Release ready → release/
-   ├── spanish-words.exe
+   ├── ${exeName}
    ├── dist/
    └── resources/
 `);
