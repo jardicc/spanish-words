@@ -5,10 +5,12 @@ import "./QuizCard.css";
 export function QuizCard({
   question,
   onAnswer,
+  onPressStart,
   pressedKey,
 }: {
   question: QuizQuestion;
   onAnswer: (option: string, correct: boolean) => void;
+  onPressStart: (optionIndex: number) => void;
   pressedKey: number | null;
 }) {
   const pressedIsWrong = pressedKey !== null && !question.options[pressedKey - 1]?.isCorrect;
@@ -32,7 +34,8 @@ export function QuizCard({
             <button
               key={`${opt.label}-${i}`}
               className={`option-btn${extra}`}
-              onClick={() => onAnswer(opt.label, opt.isCorrect)}
+              onMouseDown={() => onPressStart(i + 1)}
+              onMouseUp={() => onAnswer(opt.label, opt.isCorrect)}
               data-test="option-btn"
               data-pressed={isPressed}
               data-state={stateAttr}

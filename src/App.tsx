@@ -61,6 +61,7 @@ export default function App() {
 
   const handleAnswer = useCallback(
     (userAnswer: string, wasCorrect: boolean) => {
+      dispatch(setPressedKey(null));
       dispatch(submitAnswer({ userAnswer, wasCorrect }));
     },
     [dispatch],
@@ -141,7 +142,7 @@ export default function App() {
 
         <section className="bottom-half">
           {question ? (
-            <QuizCard question={question} onAnswer={handleAnswer} pressedKey={pressedKey} />
+            <QuizCard question={question} onAnswer={handleAnswer} onPressStart={(i) => dispatch(setPressedKey(i))} pressedKey={pressedKey} />
           ) : (
             <div className="all-done">
               🎉 Všechna slovíčka zvládnuta! Zkuste jinou strategii.
