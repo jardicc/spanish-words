@@ -171,4 +171,85 @@ describe("App", () => {
       .filter(([url]) => url.includes("/api/stats") && url.includes("cisla100.csv"));
     expect(statsCalls.length).toBeGreaterThan(0);
   });
+
+  it("submits answer via keyboard keydown+keyup", async () => {
+    const fetchMock = makeFetch();
+    _g.fetch = fetchMock;
+    await act(async () => { renderApp(); });
+    await act(flushAll);
+    expect(q(container, "quiz-card")).not.toBeNull();
+
+    // Press key "1" to select first option
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "1" }));
+    });
+    // The pressed button should be visually indicated
+    const btns = container.querySelectorAll('[data-test="option-btn"]');
+    expect(btns[0]!.getAttribute("data-pressed")).toBe("true");
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keyup", { key: "1" }));
+    });
+    await act(flushAll);
+    // After keyup, a POST to /api/stats should have been made (answer submitted)
+    const postCalls = (fetchMock.mock.calls as [string, RequestInit | undefined][])
+      .filter(([url, init]) => url.includes("/api/stats") && init?.method === "POST");
+    expect(postCalls.length).toBeGreaterThan(0);
+  });
+
+  it("ignores key presses outside range 1-6", async () => {
+    const fetchMock = makeFetch();
+    _g.fetch = fetchMock;
+    await act(async () => { renderApp(); });
+    await act(flushAll);
+
+    const postsBefore = (fetchMock.mock.calls as [string, RequestInit | undefined][])
+      .filter(([url, init]) => url.includes("/api/stats") && init?.method === "POST").length;
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "0" }));
+      window.dispatchEvent(new KeyboardEvent("keyup", { key: "0" }));
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "9" }));
+      window.dispatchEvent(new KeyboardEvent("keyup", { key: "9" }));
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "a" }));
+      window.dispatchEvent(new KeyboardEvent("keyup", { key: "a" }));
+    });
+    await act(flushAll);
+
+    const postsAfter = (fetchMock.mock.calls as [string, RequestInit | undefined][])
+      .filter(([url, init]) => url.includes("/api/stats") && init?.method === "POST").length;
+    expect(postsAfter).toBe(postsBefore);
+  });
+
+  it("still loads quiz when fetchDatasets fails", async () => {
+    _g.fetch = vi.fn((url: string, init?: RequestInit) => {
+      if (url.includes("/api/datasets"))
+        return Promise.reject(new Error("Network error"));
+      if (url.includes("/api/words"))
+        return Promise.resolve({ ok: true, text: () => Promise.resolve(SAMPLE_CSV) });
+      if (url.includes("/api/stats"))
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+    await act(async () => { renderApp(); });
+    await act(flushAll);
+    // App should still attempt to load words for default dataset
+    expect(q(container, "quiz-card")).not.toBeNull();
+  });
+
+  it("shows loading state when fetchWordsAndStats is pending", async () => {
+    // Delay word fetch so we can observe loading state
+    _g.fetch = vi.fn((url: string) => {
+      if (url.includes("/api/datasets"))
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(["top1000.csv"]) });
+      if (url.includes("/api/words"))
+        return new Promise(() => {}); // never resolves
+      if (url.includes("/api/stats"))
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+    await act(async () => { renderApp(); });
+    await act(flushAll);
+    expect(container.querySelector(".loading")).not.toBeNull();
+  });
 });
