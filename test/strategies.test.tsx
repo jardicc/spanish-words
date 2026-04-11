@@ -83,7 +83,8 @@ describe("allStrategies", () => {
     // 4 correct / 5 total = 80% → should be excluded
     const stats80: Record<string, { correct: number; incorrect: number }> = {};
     for (const w of words) {
-      stats80[w.word] = { correct: 4, incorrect: 1 };
+      stats80[`es:${w.word}`] = { correct: 4, incorrect: 1 };
+      stats80[`cs:${w.word}`] = { correct: 4, incorrect: 1 };
       stats80[`article:${w.word}`] = { correct: 4, incorrect: 1 };
     }
     for (const s of allStrategies) {
@@ -95,7 +96,8 @@ describe("allStrategies", () => {
     // 3 correct / 5 total = 60% → should still be included
     const stats60: Record<string, { correct: number; incorrect: number }> = {};
     for (const w of words) {
-      stats60[w.word] = { correct: 3, incorrect: 2 };
+      stats60[`es:${w.word}`] = { correct: 3, incorrect: 2 };
+      stats60[`cs:${w.word}`] = { correct: 3, incorrect: 2 };
       stats60[`article:${w.word}`] = { correct: 3, incorrect: 2 };
     }
     for (const s of allStrategies) {
@@ -106,11 +108,41 @@ describe("allStrategies", () => {
   it("returns null when all words mastered", () => {
     const fullStats: Record<string, { correct: number; incorrect: number }> = {};
     for (const w of words) {
-      fullStats[w.word] = { correct: 10, incorrect: 0 };
+      fullStats[`es:${w.word}`] = { correct: 10, incorrect: 0 };
+      fullStats[`cs:${w.word}`] = { correct: 10, incorrect: 0 };
       fullStats[`article:${w.word}`] = { correct: 10, incorrect: 0 };
     }
     for (const s of allStrategies) {
       expect(s.generateQuestion(words, fullStats)).toBeNull();
     }
+  });
+});
+
+describe("articleStrategy – mastery keys", () => {
+  const words = parseCSV(sampleCSV);
+  const articleStrategy = allStrategies[2]!;
+
+  it("does not return words mastered under the article:word key", () => {
+    // All nouns mastered under the correct article:word key
+    const stats: Record<string, { correct: number; incorrect: number }> = {};
+    for (const w of words.filter((w) => w.article !== "")) {
+      stats[`article:${w.word}`] = { correct: 4, incorrect: 1 }; // 80%
+    }
+    expect(articleStrategy.generateQuestion(words, stats)).toBeNull();
+  });
+
+  it("still returns words mastered only under the bare word key (no article: prefix)", () => {
+    // Stats only under bare key – articleStrategy must not treat them as mastered
+    const stats: Record<string, { correct: number; incorrect: number }> = {};
+    for (const w of words.filter((w) => w.article !== "")) {
+      stats[w.word] = { correct: 10, incorrect: 0 };
+    }
+    expect(articleStrategy.generateQuestion(words, stats)).not.toBeNull();
+  });
+
+  it("question wordKey has the article: prefix", () => {
+    const q = articleStrategy.generateQuestion(words, {});
+    expect(q).not.toBeNull();
+    expect(q!.wordKey).toMatch(/^article:/);
   });
 });

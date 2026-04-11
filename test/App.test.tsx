@@ -4,6 +4,9 @@ import React, { act } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createRoot, type Root } from "react-dom/client";
 import { q } from "./render";
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
+import quizReducer from "../src/store/quizSlice";
 import App from "../src/App";
 
 // Install happy-dom as globals so React's createRoot can use document/window.
@@ -68,11 +71,16 @@ describe("App", () => {
     vi.restoreAllMocks();
   });
 
+  function renderApp() {
+    const store = configureStore({ reducer: { quiz: quizReducer } });
+    root = createRoot(container);
+    root.render(<Provider store={store}><App /></Provider>);
+  }
+
   it("shows a quiz question after loading when words are not yet mastered", async () => {
     _g.fetch = makeFetch();
     await act(async () => {
-      root = createRoot(container);
-      root.render(<App />);
+      renderApp();
     });
     await act(flushAll);
     expect(q(container, "quiz-card")).not.toBeNull();
@@ -81,13 +89,12 @@ describe("App", () => {
   it("shows all-done message when all words are mastered", async () => {
     const mastered = Object.fromEntries(
       ["gato", "casa", "correr", "perro", "mesa", "libro"].map(
-        (k) => [k, { correct: 5, incorrect: 0 }]
+        (k) => [`es:${k}`, { correct: 5, incorrect: 0 }]
       )
     );
     _g.fetch = makeFetch(mastered);
     await act(async () => {
-      root = createRoot(container);
-      root.render(<App />);
+      renderApp();
     });
     await act(flushAll);
     expect(q(container, "quiz-card")).toBeNull();
@@ -97,8 +104,7 @@ describe("App", () => {
     const fetchMock = makeFetch();
     _g.fetch = fetchMock;
     await act(async () => {
-      root = createRoot(container);
-      root.render(<App />);
+      renderApp();
     });
     await act(flushAll);
     const statsCalls = (fetchMock.mock.calls as [string][])
@@ -123,8 +129,7 @@ describe("App", () => {
     });
     _g.fetch = fetchMock;
     await act(async () => {
-      root = createRoot(container);
-      root.render(<App />);
+      renderApp();
     });
     await act(flushAll);
 

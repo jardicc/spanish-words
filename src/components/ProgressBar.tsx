@@ -1,16 +1,18 @@
 import React from "react";
-import type { StatsMap } from "../types";
-import { MASTERY_THRESHOLD, MASTERY_MIN_ATTEMPTS } from "../constants";
+import { useAppSelector } from "../store/hooks";
+import {
+  selectMasteredCount,
+  selectAttemptedCount,
+  selectTotalWords,
+  selectProgressPercent,
+} from "../store/selectors";
 import "./ProgressBar.css";
 
-export function ProgressBar({ stats, totalWords }: { stats: StatsMap; totalWords: number }) {
-  const mastered = Object.values(stats).filter((s) => {
-    const total = s.correct + s.incorrect;
-    return total >= MASTERY_MIN_ATTEMPTS && s.correct / total >= MASTERY_THRESHOLD;
-  }).length;
-
-  const attempted = Object.keys(stats).length;
-  const percent = totalWords > 0 ? Math.round((mastered / totalWords) * 100) : 0;
+export function ProgressBar() {
+  const mastered = useAppSelector(selectMasteredCount);
+  const attempted = useAppSelector(selectAttemptedCount);
+  const totalWords = useAppSelector(selectTotalWords);
+  const percent = useAppSelector(selectProgressPercent);
 
   return (
     <div className="progress-bar" data-test="progress-bar">

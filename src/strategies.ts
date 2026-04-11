@@ -17,9 +17,9 @@ function getSuccessRate(stats: StatsMap, key: string): number {
   return s.correct / (s.correct + s.incorrect);
 }
 
-function pickWord(words: WordEntry[], stats: StatsMap): WordEntry | null {
+function pickWord(words: WordEntry[], stats: StatsMap, keyFn: (w: WordEntry) => string = (w) => w.word): WordEntry | null {
   const eligible = words.filter((w) => {
-    const key = w.word;
+    const key = keyFn(w);
     const s = stats[key];
     if (!s) return true;
     const total = s.correct + s.incorrect;
@@ -31,8 +31,8 @@ function pickWord(words: WordEntry[], stats: StatsMap): WordEntry | null {
 
   // Weight words with lower success rates higher
   const weighted = eligible.map((w) => {
-    const rate = getSuccessRate(stats, w.word);
-    const s = stats[w.word];
+    const rate = getSuccessRate(stats, keyFn(w));
+    const s = stats[keyFn(w)];
     const total = s ? s.correct + s.incorrect : 0;
     // New words (never seen) get high weight, failed words get higher weight
     const weight = total === 0 ? 5 : Math.max(1, 10 * (1 - rate));
@@ -78,8 +78,9 @@ function generateOptions(
 export const spanishToCzechStrategy: Strategy = {
   name: "Španělsky → Česky",
   description: "Zobrazí španělské slovo, vyberte český překlad",
+  keyPrefix: "es",
   generateQuestion(words, stats) {
-    const entry = pickWord(words, stats);
+    const entry = pickWord(words, stats, (w) => `es:${w.word}`);
     if (!entry) return null;
 
     const allTranslations = words.map((w) => w.translation);
@@ -93,7 +94,7 @@ export const spanishToCzechStrategy: Strategy = {
       prompt,
       correctAnswer: entry.translation,
       options,
-      wordKey: entry.word,
+      wordKey: `es:${entry.word}`,
     };
   },
 };
@@ -102,8 +103,9 @@ export const spanishToCzechStrategy: Strategy = {
 export const czechToSpanishStrategy: Strategy = {
   name: "Česky → Španělsky",
   description: "Zobrazí český překlad, vyberte španělské slovo",
+  keyPrefix: "cs",
   generateQuestion(words, stats) {
-    const entry = pickWord(words, stats);
+    const entry = pickWord(words, stats, (w) => `cs:${w.word}`);
     if (!entry) return null;
 
     const allWords = words.map((w) =>
@@ -118,7 +120,7 @@ export const czechToSpanishStrategy: Strategy = {
       prompt: entry.translation,
       correctAnswer: correctLabel,
       options,
-      wordKey: entry.word,
+      wordKey: `cs:${entry.word}`,
     };
   },
 };
@@ -127,9 +129,11 @@ export const czechToSpanishStrategy: Strategy = {
 export const articleStrategy: Strategy = {
   name: "Členy",
   description: "Vyberte správný člen pro podstatné jméno",
+  keyPrefix: "article",
+  wordsFilter: (words) => words.filter((w) => w.article !== ""),
   generateQuestion(words, stats) {
     const nouns = words.filter((w) => w.article !== "");
-    const entry = pickWord(nouns, stats);
+    const entry = pickWord(nouns, stats, (w) => `article:${w.word}`);
     if (!entry) return null;
 
     const options: QuizOption[] = [

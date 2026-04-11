@@ -28,6 +28,8 @@ export interface QuizQuestion {
 export interface Strategy {
   name: string;
   description: string;
+  keyPrefix: string;
+  wordsFilter?: (words: WordEntry[]) => WordEntry[];
   generateQuestion(words: WordEntry[], stats: StatsMap): QuizQuestion | null;
 }
 

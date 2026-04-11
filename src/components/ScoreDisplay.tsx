@@ -1,19 +1,15 @@
 import React from "react";
-import type { StatsMap } from "../types";
+import { useAppSelector } from "../store/hooks";
+import { selectScoreTotals } from "../store/selectors";
 import "./ScoreDisplay.css";
 
-export function ScoreDisplay({ stats }: { stats: StatsMap }) {
-  const totals = Object.values(stats).reduce(
-    (acc, s) => ({ correct: acc.correct + s.correct, incorrect: acc.incorrect + s.incorrect }),
-    { correct: 0, incorrect: 0 }
-  );
-  const total = totals.correct + totals.incorrect;
-  const rate = total > 0 ? Math.round((totals.correct / total) * 100) : 0;
+export function ScoreDisplay() {
+  const { correct, incorrect, rate } = useAppSelector(selectScoreTotals);
 
   return (
     <div className="score-display" data-test="score-display">
-      <span className="score-correct" data-test="score-correct">{totals.correct}</span>
-      <span className="score-incorrect" data-test="score-incorrect">{totals.incorrect}</span>
+      <span className="score-correct" data-test="score-correct">{correct}</span>
+      <span className="score-incorrect" data-test="score-incorrect">{incorrect}</span>
       <span className="score-rate" data-test="score-rate">{rate}%</span>
     </div>
   );
