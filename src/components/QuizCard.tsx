@@ -25,6 +25,9 @@ export function QuizCard({
           } else if (pressedIsWrong && opt.isCorrect) {
             extra = " option-btn-correct";
           }
+          const stateAttr =
+            isPressed ? (opt.isCorrect ? "correct" : "wrong") :
+            (pressedIsWrong && opt.isCorrect) ? "correct-hint" : undefined;
           return (
             <button
               key={`${opt.label}-${i}`}
@@ -32,6 +35,7 @@ export function QuizCard({
               onClick={() => onAnswer(opt.label, opt.isCorrect)}
               data-test="option-btn"
               data-pressed={isPressed}
+              data-state={stateAttr}
             >
               <span className="option-key" data-test="option-key">{i + 1}</span>
               <span className="option-label" data-test="option-label">{opt.label}</span>

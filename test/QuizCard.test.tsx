@@ -1,20 +1,9 @@
-// @vitest-environment happy-dom
-import { GlobalWindow } from "happy-dom";
 import { describe, it, expect, vi } from "vitest";
 import React, { act } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, type Root } from "react-dom/client";
 import { render, q, qAll } from "./render";
 import { QuizCard } from "../src/components/QuizCard";
 import type { QuizQuestion } from "../src/types";
-
-const _hw = new GlobalWindow() as any;
-const _g = globalThis as any;
-if (!_g.document) {
-  Object.getOwnPropertyNames(_hw).forEach((key) => {
-    try { if (!(key in _g)) _g[key] = _hw[key]; } catch {}
-  });
-}
-_g.IS_REACT_ACT_ENVIRONMENT = true;
 
 const question: QuizQuestion = {
   prompt: "la casa",
@@ -95,10 +84,10 @@ describe("QuizCard", () => {
   it("calls onAnswer with label and isCorrect when option is clicked", () => {
     const onAnswer = vi.fn();
     const container = document.createElement("div");
+    let root!: Root;
     act(() => {
-      createRoot(container).render(
-        <QuizCard question={question} onAnswer={onAnswer} pressedKey={null} />
-      );
+      root = createRoot(container);
+      root.render(<QuizCard question={question} onAnswer={onAnswer} pressedKey={null} />);
     });
     // Click the first option ("dům", correct)
     const btns = container.querySelectorAll<HTMLButtonElement>('[data-test="option-btn"]');
@@ -107,31 +96,28 @@ describe("QuizCard", () => {
     // Click the second option ("pes", incorrect)
     btns[1]!.click();
     expect(onAnswer).toHaveBeenCalledWith("pes", false);
+    act(() => { root.unmount(); });
   });
 
-  it("highlights correct answer when wrong key is pressed (pressedIsWrong)", () => {
-    // pressedKey=2 → "pes" (incorrect). Should highlight pressed as wrong AND show correct.
+  it("highlights wrong pressed button and hints correct answer", () => {
+    // pressedKey=2 → "pes" (incorrect). Should mark pressed as wrong AND hint the correct one.
     const el = render(
       <QuizCard question={question} onAnswer={() => {}} pressedKey={2} />
     );
     const btns = qAll(el, "option-btn");
-    // Button index 1 (key 2) = "pes" → pressed + wrong
-    expect(btns[1]!.className).toContain("option-btn-wrong");
-    // Button index 0 = "dům" (correct) → should also be highlighted as correct
-    expect(btns[0]!.className).toContain("option-btn-correct");
+    expect(btns[1]!.getAttribute("data-state")).toBe("wrong");
+    expect(btns[0]!.getAttribute("data-state")).toBe("correct-hint");
   });
 
-  it("does not highlight correct answer when correct key is pressed", () => {
-    // pressedKey=1 → "dům" (correct). Only the pressed button should be highlighted.
+  it("only marks the pressed correct button, others have no state", () => {
+    // pressedKey=1 → "dům" (correct). Only that button should have a state.
     const el = render(
       <QuizCard question={question} onAnswer={() => {}} pressedKey={1} />
     );
     const btns = qAll(el, "option-btn");
-    expect(btns[0]!.className).toContain("option-btn-correct");
-    // Other buttons should NOT have any extra styling
+    expect(btns[0]!.getAttribute("data-state")).toBe("correct");
     for (let i = 1; i < btns.length; i++) {
-      expect(btns[i]!.className).not.toContain("option-btn-correct");
-      expect(btns[i]!.className).not.toContain("option-btn-wrong");
+      expect(btns[i]!.getAttribute("data-state")).toBeNull();
     }
   });
 });

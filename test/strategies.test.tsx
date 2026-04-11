@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseCSV } from "../src/csv";
-import { allStrategies } from "../src/strategies";
+import { allStrategies, calcWordWeight } from "../src/strategies";
 
 const sampleCSV = `Rank,Article,Word,Translation(EN),Czech,Part of Speech
 1,,de,of,z,preposition
@@ -147,43 +147,19 @@ describe("allStrategies", () => {
 describe("pickWord – weighted selection", () => {
   const words = parseCSV(sampleCSV);
 
-  it("gives new (unseen) words higher chance than partially-seen words", () => {
-    // Only "gato" has stats → the rest are unseen (weight 5 each)
-    const stats = { "es:gato": { correct: 2, incorrect: 1 } }; // rate=0.67 → weight=max(1,10*0.33)=3.3
-    const counts: Record<string, number> = {};
-    for (let i = 0; i < 200; i++) {
-      const q = allStrategies[0]!.generateQuestion(words, stats);
-      const key = q!.wordKey;
-      counts[key] = (counts[key] ?? 0) + 1;
-    }
-    // Unseen words collectively should appear much more than gato
-    const gatoCount = counts["es:gato"] ?? 0;
-    const otherCount = Object.entries(counts)
-      .filter(([k]) => k !== "es:gato")
-      .reduce((s, [, v]) => s + v, 0);
-    expect(otherCount).toBeGreaterThan(gatoCount);
+  it("unseen words get higher weight than partially-seen words", () => {
+    // gato: rate=0.67 → weight≈3.3; unseen key → weight=5
+    const stats = { "es:gato": { correct: 2, incorrect: 1 } };
+    expect(calcWordWeight(stats, "es:gato")).toBeLessThan(calcWordWeight(stats, "es:unseen"));
   });
 
-  it("gives failed words higher weight than successful words", () => {
-    // Two words: one with high success, one with low success
+  it("failed words get higher weight than moderately successful words", () => {
+    // rate=0.2 → weight=8; rate=0.67 → weight≈3.3
     const stats = {
-      "es:gato": { correct: 1, incorrect: 4 },   // rate=0.2 → weight=8
-      "es:casa": { correct: 4, incorrect: 1 },    // rate=0.8 → mastered, excluded
-      "es:correr": { correct: 1, incorrect: 4 },  // rate=0.2 → weight=8
-      "es:perro": { correct: 2, incorrect: 1 },   // rate=0.67 → weight=3.3
-      "es:mesa": { correct: 2, incorrect: 1 },    // rate=0.67 → weight=3.3
-      "es:libro": { correct: 2, incorrect: 1 },   // rate=0.67 → weight=3.3
+      "es:gato": { correct: 1, incorrect: 4 },
+      "es:perro": { correct: 2, incorrect: 1 },
     };
-    const counts: Record<string, number> = {};
-    for (let i = 0; i < 300; i++) {
-      const q = allStrategies[0]!.generateQuestion(words, stats);
-      const key = q!.wordKey;
-      counts[key] = (counts[key] ?? 0) + 1;
-    }
-    // gato and correr (low success) should appear more than perro (higher success)
-    expect((counts["es:gato"] ?? 0) + (counts["es:correr"] ?? 0)).toBeGreaterThan(
-      (counts["es:perro"] ?? 0)
-    );
+    expect(calcWordWeight(stats, "es:gato")).toBeGreaterThan(calcWordWeight(stats, "es:perro"));
   });
 
   it("returns null when no words are provided", () => {

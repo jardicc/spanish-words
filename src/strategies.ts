@@ -17,6 +17,13 @@ function getSuccessRate(stats: StatsMap, key: string): number {
   return s.correct / (s.correct + s.incorrect);
 }
 
+export function calcWordWeight(stats: StatsMap, key: string): number {
+  const s = stats[key];
+  const total = s ? s.correct + s.incorrect : 0;
+  if (total === 0) return 5;
+  return Math.max(1, 10 * (1 - s!.correct / total));
+}
+
 function pickWord(words: WordEntry[], stats: StatsMap, keyFn: (w: WordEntry) => string = (w) => w.word): WordEntry | null {
   const eligible = words.filter((w) => {
     const key = keyFn(w);
@@ -30,14 +37,10 @@ function pickWord(words: WordEntry[], stats: StatsMap, keyFn: (w: WordEntry) => 
   if (eligible.length === 0) return null;
 
   // Weight words with lower success rates higher
-  const weighted = eligible.map((w) => {
-    const rate = getSuccessRate(stats, keyFn(w));
-    const s = stats[keyFn(w)];
-    const total = s ? s.correct + s.incorrect : 0;
-    // New words (never seen) get high weight, failed words get higher weight
-    const weight = total === 0 ? 5 : Math.max(1, 10 * (1 - rate));
-    return { word: w, weight };
-  });
+  const weighted = eligible.map((w) => ({
+    word: w,
+    weight: calcWordWeight(stats, keyFn(w)),
+  }));
 
   const totalWeight = weighted.reduce((sum, w) => sum + w.weight, 0);
   let random = Math.random() * totalWeight;

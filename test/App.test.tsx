@@ -1,5 +1,3 @@
-// @vitest-environment happy-dom
-import { GlobalWindow } from "happy-dom";
 import React, { act } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createRoot, type Root } from "react-dom/client";
@@ -9,16 +7,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import quizReducer from "../src/store/quizSlice";
 import App from "../src/App";
 
-// Install happy-dom as globals so React's createRoot can use document/window.
-// This is the fallback for test runners that ignore vitest.config.ts environment.
-const _hw = new GlobalWindow() as any;
 const _g = globalThis as any;
-if (!_g.document) {
-  Object.getOwnPropertyNames(_hw).forEach((key) => {
-    try { if (!(key in _g)) _g[key] = _hw[key]; } catch {}
-  });
-}
-_g.IS_REACT_ACT_ENVIRONMENT = true;
 
 // Minimal CSV: Rank,Article,Word,Translation_EN,Czech,PoS
 const SAMPLE_CSV = `Rank,Article,Word,Translation,Czech,PoS

@@ -1,20 +1,9 @@
-// @vitest-environment happy-dom
-import { GlobalWindow } from "happy-dom";
 import { describe, it, expect, vi } from "vitest";
 import React, { act } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, type Root } from "react-dom/client";
 import { render, q, qAll } from "./render";
 import { StrategySelector } from "../src/components/StrategySelector";
 import type { Strategy } from "../src/types";
-
-const _hw = new GlobalWindow() as any;
-const _g = globalThis as any;
-if (!_g.document) {
-  Object.getOwnPropertyNames(_hw).forEach((key) => {
-    try { if (!(key in _g)) _g[key] = _hw[key]; } catch {}
-  });
-}
-_g.IS_REACT_ACT_ENVIRONMENT = true;
 
 const mockStrategies: Strategy[] = [
   { name: "Strategie A", description: "Popis A", generateQuestion: () => null },
@@ -65,15 +54,16 @@ describe("StrategySelector", () => {
   it("calls onChange with correct index when button is clicked", () => {
     const onChange = vi.fn();
     const container = document.createElement("div");
+    let root!: Root;
     act(() => {
-      createRoot(container).render(
-        <StrategySelector strategies={mockStrategies} current={0} onChange={onChange} />
-      );
+      root = createRoot(container);
+      root.render(<StrategySelector strategies={mockStrategies} current={0} onChange={onChange} />);
     });
     const btns = container.querySelectorAll<HTMLButtonElement>('[data-test="strategy-btn"]');
     btns[2]!.click();
     expect(onChange).toHaveBeenCalledWith(2);
     btns[0]!.click();
     expect(onChange).toHaveBeenCalledWith(0);
+    act(() => { root.unmount(); });
   });
 });
